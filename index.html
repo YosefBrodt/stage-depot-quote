@@ -108,6 +108,19 @@
   }
   .badge.draft { background: #fef3c7; color: #92400e; }
   .badge.saved { background: #d1fae5; color: #065f46; }
+  .autocomplete-pop {
+    position: absolute; background: white; border: 1px solid var(--line);
+    border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    z-index: 60; display: none; max-height: 280px; overflow-y: auto; min-width: 240px;
+  }
+  .autocomplete-pop.open { display: block; }
+  .autocomplete-item {
+    padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--line);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.focused { background: #faf7f1; }
+  .autocomplete-name { font-size: 13px; font-weight: 500; }
+  .autocomplete-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
   @media print { body { display: none; } }
 </style>
 </head>
@@ -1040,9 +1053,139 @@ function emailQuote() {
   // Trigger PDF download first so the user can attach it
   downloadPDF();
   setTimeout(() => {
-    const url = `mailto:${encodeURIComponent(c.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = url;
+    const gmail = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=${encodeURIComponent(c.email || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmail, '_blank');
   }, 600);
+}
+
+// ============ CLIENT AUTOCOMPLETE ============
+function getUniqueClients() {
+  const all = loadQuotes().sort((a, b) => b.updatedAt - a.updatedAt);
+  const seen = new Set();
+  const out = [];
+  all.forEach(q => {
+    const c = q.client || {};
+    const key = (c.name || '').toLowerCase().trim() + '|' + (c.address || '').toLowerCase().trim();
+    if (key === '|') return;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ name: c.name || '', address: c.address || '', email: c.email || '', phone: c.phone || '' });
+  });
+  return out;
+}
+
+let _acMatches = [];
+let _acFocusIdx = -1;
+let _acAnchor = null;
+
+function ensureAcEl() {
+  let el = document.getElementById('clientAutocomplete');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'clientAutocomplete';
+    el.className = 'autocomplete-pop';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function showAutocomplete(input) {
+  const q = (input.value || '').trim().toLowerCase();
+  if (q.length < 2) { hideAutocomplete(); return; }
+  const clients = getUniqueClients();
+  _acMatches = clients.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.address.toLowerCase().includes(q) ||
+    c.email.toLowerCase().includes(q) ||
+    c.phone.toLowerCase().includes(q)
+  ).slice(0, 6);
+  if (_acMatches.length === 0) { hideAutocomplete(); return; }
+
+  _acAnchor = input;
+  _acFocusIdx = -1;
+  const pop = ensureAcEl();
+  pop.innerHTML = _acMatches.map((m, i) => `
+    <div class="autocomplete-item" data-i="${i}">
+      <div class="autocomplete-name">${escapeHtml(m.name || m.address || 'Untitled')}</div>
+      ${m.address ? `<div class="autocomplete-sub">${escapeHtml(m.address)}</div>` : ''}
+      ${(m.email || m.phone) ? `<div class="autocomplete-sub">${[m.email, m.phone].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : ''}
+    </div>
+  `).join('');
+
+  const rect = input.getBoundingClientRect();
+  pop.style.left = (rect.left + window.scrollX) + 'px';
+  pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  pop.style.width = rect.width + 'px';
+  pop.classList.add('open');
+
+  pop.querySelectorAll('.autocomplete-item').forEach(el => {
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      pickAutocomplete(parseInt(el.dataset.i));
+    });
+  });
+}
+
+function hideAutocomplete() {
+  const el = document.getElementById('clientAutocomplete');
+  if (el) el.classList.remove('open');
+  _acMatches = [];
+  _acFocusIdx = -1;
+  _acAnchor = null;
+}
+
+function pickAutocomplete(i) {
+  const m = _acMatches[i];
+  if (!m) return;
+  state.client.name = m.name;
+  state.client.address = m.address;
+  state.client.email = m.email;
+  state.client.phone = m.phone;
+  syncFieldsFromState();
+  hideAutocomplete();
+  touch();
+  toast('Client filled');
+}
+
+function attachClientAutocomplete() {
+  ['#clientName', '#clientAddress', '#clientEmail', '#clientPhone'].forEach(sel => {
+    const el = $(sel);
+    if (!el) return;
+    el.addEventListener('input', () => showAutocomplete(el));
+    el.addEventListener('focus', () => { if ((el.value || '').length >= 2) showAutocomplete(el); });
+    el.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
+    el.addEventListener('keydown', (e) => {
+      const pop = document.getElementById('clientAutocomplete');
+      if (!pop || !pop.classList.contains('open')) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _acFocusIdx = Math.min(_acFocusIdx + 1, _acMatches.length - 1);
+        updateAcFocus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _acFocusIdx = Math.max(_acFocusIdx - 1, 0);
+        updateAcFocus();
+      } else if (e.key === 'Enter' && _acFocusIdx >= 0) {
+        e.preventDefault();
+        pickAutocomplete(_acFocusIdx);
+      } else if (e.key === 'Escape') {
+        hideAutocomplete();
+      }
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#clientAutocomplete') && !e.target.matches('input.field')) hideAutocomplete();
+  });
+  window.addEventListener('scroll', hideAutocomplete, true);
+  window.addEventListener('resize', hideAutocomplete);
+}
+
+function updateAcFocus() {
+  const pop = document.getElementById('clientAutocomplete');
+  if (!pop) return;
+  pop.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+    el.classList.toggle('focused', i === _acFocusIdx);
+  });
 }
 
 function copyQuote() {
@@ -1110,6 +1253,7 @@ function toast(msg) {
   }
   syncFieldsFromState();
   bindFields();
+  attachClientAutocomplete();
   render();
 })();
 </script>
