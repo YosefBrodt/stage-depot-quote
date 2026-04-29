@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stage Depot — Quote Builder</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1917;
+    --paper: #f8f5f0;
+    --accent: #8a5a2b;
+    --line: #e7e1d6;
+    --muted: #78716c;
+  }
+  html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .serif { font-family: 'Cormorant Garamond', 'Iowan Old Style', serif; letter-spacing: -0.01em; }
+  body { background: var(--paper); color: var(--ink); }
+  .accent { color: var(--accent); }
+  .accent-bg { background: var(--accent); }
+  .border-line { border-color: var(--line); }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  .field {
+    background: white; border: 1px solid var(--line); border-radius: 6px;
+    padding: 9px 11px; width: 100%; font-size: 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138,90,43,.12); }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 500; }
+  .pill {
+    border: 1px solid var(--line); background: white;
+    padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .15s;
+  }
+  .pill:hover { border-color: #c4baa7; }
+  .pill.active { background: var(--ink); color: white; border-color: var(--ink); }
+  .stepper-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); background: white; border-radius: 6px;
+    font-size: 16px; cursor: pointer; user-select: none; transition: all .12s;
+  }
+  .stepper-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .stepper-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .room-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px 18px; transition: all .15s;
+  }
+  .room-card.has { border-color: var(--accent); box-shadow: 0 1px 0 rgba(138,90,43,.08); }
+  .toggle-tab {
+    flex: 1; text-align: center; padding: 12px 16px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border-bottom: 2px solid transparent; color: var(--muted); transition: all .15s;
+  }
+  .toggle-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .quote-line { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .quote-line:last-child { border-bottom: none; }
+  .quote-line .desc { flex: 1; }
+  .quote-line .qty { color: var(--muted); font-size: 12px; }
+  .quote-line .amt { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+  .total-row { font-size: 22px; font-weight: 600; }
+  .empty { color: #a8a29e; font-size: 13px; font-style: italic; padding: 20px 0; text-align: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--line); background: white; cursor: pointer;
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--ink); }
+  .btn-primary { background: var(--ink); color: white; border-color: var(--ink); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-ghost { border-color: transparent; }
+  .btn-ghost:hover { border-color: var(--line); background: #fafaf7; }
+  .check { color: var(--accent); }
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: '+'; float: right; font-size: 18px; color: #a8a29e; transition: transform .2s; }
+  details[open] > summary::after { content: '–'; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(28,25,23,.4);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 60px 20px 20px; z-index: 50;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 12px; max-width: 720px; width: 100%;
+    max-height: calc(100vh - 100px); overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; z-index: 100; opacity: 0; transition: opacity .2s, transform .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+    background: var(--line); color: var(--ink);
+  }
+  .badge.draft { background: #fef3c7; color: #92400e; }
+  .badge.saved { background: #d1fae5; color: #065f46; }
+  @media print { body { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="border-b border-line bg-white sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 accent-bg text-white rounded-md flex items-center justify-center serif text-xl font-semibold">S</div>
+      <div>
+        <div class="serif text-2xl leading-none font-semibold">Stage Depot</div>
+        <div class="text-xs text-stone-500 mt-0.5 flex items-center gap-2">
+          <span id="quoteIdDisplay">New quote</span>
+          <span id="statusBadge" class="badge draft">Draft</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="btn btn-ghost" onclick="newQuote()">+ New</button>
+      <button class="btn" onclick="openHistory()">History</button>
+      <button class="btn" onclick="saveQuote()">Save</button>
+      <button class="btn" onclick="downloadPDF()">PDF</button>
+      <button class="btn" onclick="emailQuote()">Email</button>
+      <button class="btn btn-primary" onclick="copyQuote()" id="copyBtn">Copy</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-10">
+
+  <!-- LEFT: CONFIGURATOR -->
+  <section class="space-y-8">
+
+    <!-- Client info -->
+    <div>
+      <h2 class="serif text-3xl font-semibold mb-1">New Quote</h2>
+      <p class="text-stone-500 text-sm mb-5">Build a staging package, send it out.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <div class="label mb-1.5">Client name</div>
+          <input class="field" id="clientName" placeholder="Jane Doe" />
+        </div>
+        <div>
+          <div class="label mb-1.5">Property address</div>
+          <input class="field" id="clientAddress" placeholder="123 Maple Ave" />
+        </div>
+        <div>
+          <div class="label mb-1.5">Quote date</div>
+          <input type="date" class="field" id="quoteDate" />
+        </div>
+        <div>
+          <div class="label mb-1.5">Client email</div>
+          <input type="email" class="field" id="clientEmail" placeholder="jane@email.com" />
+        </div>
+        <div>
+          <div class="label mb-1.5">Client phone</div>
+          <input class="field" id="clientPhone" placeholder="(416) 555-0100" />
+        </div>
+        <div>
+          <div class="label mb-1.5">Install date</div>
+          <input type="date" class="field" id="installDate" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode + tier + rooms -->
+    <div class="bg-white border border-line rounded-xl overflow-hidden">
+      <div class="flex border-b border-line">
+        <div class="toggle-tab active" data-mode="full" onclick="setMode('full')">Full Home Package</div>
+        <div class="toggle-tab" data-mode="single" onclick="setMode('single')">Single Room(s)</div>
+      </div>
+      <div class="p-6">
+        <div class="mb-6">
+          <div class="label mb-2.5">Tier</div>
+          <div class="flex gap-2 flex-wrap" id="tierPills"></div>
+          <div class="hint mt-2" id="tierHint"></div>
+        </div>
+        <div id="modeBody"></div>
+      </div>
+    </div>
+
+    <!-- Pricing & terms -->
+    <div class="bg-white border border-line rounded-xl p-6 space-y-5">
+      <div class="serif text-xl font-semibold">Pricing & terms</div>
+
+      <!-- Discount -->
+      <div>
+        <div class="label mb-2">Discount</div>
+        <div class="grid grid-cols-1 sm:grid-cols-[140px_140px_1fr] gap-2">
+          <select class="field" id="discountType">
+            <option value="none">No discount</option>
+            <option value="amount">$ off</option>
+            <option value="percent">% off</option>
+          </select>
+          <input type="number" min="0" step="0.01" class="field" id="discountValue" placeholder="0" />
+          <input class="field" id="discountReason" placeholder="Reason (optional, shown on quote)" />
+        </div>
+      </div>
+
+      <!-- Tax -->
+      <div>
+        <div class="label mb-2">Tax</div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="taxEnabled" />
+            <span>Apply tax</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <input type="number" min="0" max="50" step="0.01" class="field" style="width:90px" id="taxRate" />
+            <span class="text-sm text-stone-500">% (HST/GST)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deposit -->
+      <div>
+        <div class="label mb-2">Deposit & payment</div>
+        <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <input type="number" min="0" max="100" class="field" style="width:80px" id="depositPercent" />
+            <span class="text-sm text-stone-500">%</span>
+          </div>
+          <input class="field" id="paymentTerms" placeholder="Payment terms" />
+        </div>
+        <div class="hint">Default: 50% deposit on signing, balance due on install.</div>
+      </div>
+    </div>
+
+    <!-- Extension -->
+    <div class="bg-white border border-line rounded-xl p-6">
+      <details>
+        <summary><span class="serif text-xl font-semibold">Extension calculator</span></summary>
+        <div class="mt-4 space-y-3">
+          <p class="hint">Initial contract runs 8 weeks. After that, the first month extension is 60% off the original; each subsequent month is 65% off.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <div class="label mb-1.5">Months to extend</div>
+              <input type="number" min="0" max="12" class="field" id="extMonths" />
+            </div>
+          </div>
+          <div id="extPreview" class="text-sm"></div>
+        </div>
+      </details>
+    </div>
+
+  </section>
+
+  <!-- RIGHT: QUOTE PREVIEW -->
+  <aside class="lg:sticky lg:top-24 self-start">
+    <div class="bg-white border border-line rounded-xl shadow-sm">
+      <div class="px-6 py-5 border-b border-line">
+        <div class="flex items-baseline justify-between">
+          <div class="serif text-2xl font-semibold">Quote</div>
+          <div class="text-xs text-stone-500" id="quoteMetaTop"></div>
+        </div>
+        <div class="text-sm text-stone-600 mt-1" id="quoteClientLine">Stage Depot — Home Staging</div>
+      </div>
+
+      <div class="px-6 py-4">
+        <div id="quoteLines"></div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-line bg-stone-50/60 space-y-1.5">
+        <div id="subtotalRow" class="flex items-baseline justify-between text-sm">
+          <span class="text-stone-600">Subtotal</span>
+          <span class="tabular-nums" id="subtotalAmt">$0</span>
+        </div>
+        <div id="discountRow" class="hidden flex items-baseline justify-between text-sm">
+          <span class="text-stone-600" id="discountLabel">Discount</span>
+          <span class="tabular-nums accent" id="discountAmt">−$0</span>
+        </div>
+        <div id="taxRow" class="hidden flex items-baseline justify-between text-sm">
+          <span class="text-stone-600" id="taxLabel">Tax</span>
+          <span class="tabular-nums" id="taxAmt">$0</span>
+        </div>
+        <div class="flex items-baseline justify-between pt-2 border-t border-line">
+          <div class="label">Total</div>
+          <div class="total-row serif accent" id="quoteTotal">$0</div>
+        </div>
+        <div id="depositRow" class="hidden text-xs text-stone-600 pt-1.5 space-y-0.5">
+          <div class="flex justify-between"><span>Deposit due on signing</span><span class="tabular-nums" id="depositAmt">$0</span></div>
+          <div class="flex justify-between"><span>Balance due on install</span><span class="tabular-nums" id="balanceAmt">$0</span></div>
+        </div>
+      </div>
+
+      <div class="px-6 py-5 border-t border-line">
+        <div class="label mb-2">What's included</div>
+        <ul class="text-sm space-y-1.5" id="quoteIncluded"></ul>
+      </div>
+
+      <div class="px-6 py-4 border-t border-line">
+        <div class="label mb-1.5">Extensions</div>
+        <p class="hint">After 8 weeks, the first additional month is 60% of original contract. Subsequent months are 65% of original.</p>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="historyModal" onclick="if (event.target === this) closeHistory()">
+  <div class="modal">
+    <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+      <div class="serif text-2xl font-semibold">Quote History</div>
+      <button class="btn btn-ghost" onclick="closeHistory()">Close</button>
+    </div>
+    <div class="overflow-auto" id="historyList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden PDF render target -->
+<div id="pdfTarget" style="position: absolute; left: -10000px; top: 0; width: 720px;"></div>
+
+<script>
+// ============ PRICING ============
+const PRICING = {
+  full: {
+    basic: {
+      label: "Basic Package", base: 4599,
+      sublabel: "Standard condo / smaller home",
+      includes: ["Dining Room", "Living Room", "Kitchen — 4-seater table + 4 island stools", "Entrance & Hallway", "Master Bedroom", "2 Bathrooms (powder + master)"],
+      addons: [
+        { id: "bedroom",        label: "Additional bedroom",     price: 899,  multi: true,  max: 6 },
+        { id: "livingroom",     label: "Additional living room", price: 1099, multi: true,  max: 3 },
+        { id: "office",         label: "Office",                 price: 599,  multi: true,  max: 3 },
+        { id: "gym",            label: "Gym",                    price: 999,  multi: false },
+        { id: "bathroom",       label: "Additional bathroom",    price: 199,  multi: true,  max: 6 },
+        { id: "kitchen-upgrade",label: "Upgraded kitchen",       price: 299,  multi: false },
+        { id: "playroom",       label: "Basement playroom",      price: 1099, multi: false }
+      ]
+    },
+    signature: {
+      label: "Signature Package", base: 5749,
+      sublabel: "Larger home — includes 25% premium for upgraded furniture",
+      includes: ["Dining Room", "Living Room", "Kitchen — 4-seater table + 4 island stools", "Entrance & Hallway", "Master Bedroom", "2 Bathrooms (powder + master)"],
+      addons: [
+        { id: "bedroom",        label: "Additional bedroom",     price: 1129, multi: true,  max: 6 },
+        { id: "livingroom",     label: "Additional living room", price: 1379, multi: true,  max: 3 },
+        { id: "office",         label: "Office",                 price: 749,  multi: true,  max: 3 },
+        { id: "gym",            label: "Gym",                    price: 1249, multi: false },
+        { id: "bathroom",       label: "Additional bathroom",    price: 249,  multi: true,  max: 6 },
+        { id: "playroom",       label: "Basement playroom",      price: 1379, multi: false }
+      ]
+    }
+  },
+  single: {
+    standard: {
+      label: "Standard rooms", sublabel: "Individual room staging — delivery included",
+      rooms: [
+        { id: "bedroom",     label: "Bedroom",      price: 1299, max: 6 },
+        { id: "livingroom",  label: "Living Room",  price: 1599, max: 3 },
+        { id: "diningroom",  label: "Dining Room",  price: 1599, max: 2 },
+        { id: "kitchen",     label: "Kitchen",      price: 1299, max: 2 }
+      ]
+    },
+    signature: {
+      label: "Signature rooms", sublabel: "For larger homes — includes 25% premium",
+      rooms: [
+        { id: "bedroom",     label: "Bedroom",      price: 1629, max: 6 },
+        { id: "livingroom",  label: "Living Room",  price: 1999, max: 3 },
+        { id: "diningroom",  label: "Dining Room",  price: 1629, max: 2 },
+        { id: "kitchen",     label: "Kitchen",      price: 1629, max: 2 }
+      ]
+    }
+  }
+};
+
+// ============ STORAGE ============
+const STORAGE = { current: 'sd_current_v1', quotes: 'sd_quotes_v1', counter: 'sd_counter_v1' };
+
+function nextQuoteId() {
+  const year = new Date().getFullYear();
+  const key = `${STORAGE.counter}_${year}`;
+  const n = (parseInt(localStorage.getItem(key)) || 0) + 1;
+  localStorage.setItem(key, n);
+  return `SD-${year}-${String(n).padStart(4, '0')}`;
+}
+
+function loadQuotes() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.quotes)) || []; }
+  catch { return []; }
+}
+function saveQuotes(arr) { localStorage.setItem(STORAGE.quotes, JSON.stringify(arr)); }
+
+function loadCurrent() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.current)); }
+  catch { return null; }
+}
+function saveCurrent() { localStorage.setItem(STORAGE.current, JSON.stringify(state)); }
+
+// ============ STATE ============
+const defaultState = () => ({
+  quoteId: null,
+  status: 'draft',
+  mode: 'full',
+  tier: 'basic',
+  qty: {},
+  custom: [],
+  client: { name: '', address: '', email: '', phone: '', date: new Date().toISOString().slice(0,10), installDate: '' },
+  discount: { type: 'none', value: 0, reason: '' },
+  tax: { enabled: false, rate: 13 },
+  deposit: { percent: 50, terms: '50% deposit on signing. Balance due on install day.' },
+  extMonths: 0,
+  createdAt: Date.now(),
+  updatedAt: Date.now()
+});
+
+let state = defaultState();
+
+const $ = (sel, root = document) => root.querySelector(sel);
+
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function fmtSigned(n) {
+  return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============ STATE MUTATORS ============
+function key(id) { return `${state.mode}.${state.tier}.${id}`; }
+function getQty(id) { return state.qty[key(id)] || 0; }
+function setQty(id, n) {
+  const k = key(id);
+  if (n <= 0) delete state.qty[k]; else state.qty[k] = n;
+  touch();
+}
+
+function setMode(m) {
+  state.mode = m;
+  state.tier = m === 'full' ? 'basic' : 'standard';
+  touch();
+}
+function setTier(t) { state.tier = t; touch(); }
+
+function addCustom() {
+  const lbl = $('#customLabel').value.trim();
+  const p = parseFloat($('#customPrice').value);
+  if (!lbl || !p || p <= 0) return;
+  state.custom.push({ label: lbl, price: Math.round(p) });
+  $('#customLabel').value = ''; $('#customPrice').value = '';
+  touch();
+}
+function removeCustom(i) { state.custom.splice(i, 1); touch(); }
+
+function touch() {
+  state.updatedAt = Date.now();
+  saveCurrent();
+  // If this quote is already saved (has an ID), keep its history entry in sync
+  if (state.quoteId) {
+    const all = loadQuotes();
+    const idx = all.findIndex(q => q.quoteId === state.quoteId);
+    if (idx >= 0) { all[idx] = JSON.parse(JSON.stringify(state)); saveQuotes(all); }
+  }
+  render();
+}
+
+// ============ CALCULATIONS ============
+function buildLines() {
+  const lines = [];
+  if (state.mode === 'full') {
+    const cfg = PRICING.full[state.tier];
+    lines.push({ desc: cfg.label, qty: 1, unit: cfg.base, amt: cfg.base });
+    cfg.addons.forEach(a => {
+      const q = state.qty[`full.${state.tier}.${a.id}`] || 0;
+      if (q > 0) lines.push({ desc: a.label, qty: q, unit: a.price, amt: q * a.price });
+    });
+  } else {
+    const cfg = PRICING.single[state.tier];
+    cfg.rooms.forEach(r => {
+      const q = state.qty[`single.${state.tier}.${r.id}`] || 0;
+      if (q > 0) lines.push({ desc: r.label, qty: q, unit: r.price, amt: q * r.price });
+    });
+  }
+  state.custom.forEach(c => lines.push({ desc: c.label, qty: 1, unit: c.price, amt: c.price, custom: true }));
+  return lines;
+}
+
+function buildIncluded() {
+  if (state.mode === 'full') {
+    const cfg = PRICING.full[state.tier];
+    const items = [...cfg.includes];
+    cfg.addons.forEach(a => {
+      const q = state.qty[`full.${state.tier}.${a.id}`] || 0;
+      if (q > 0) items.push(`${a.label}${q > 1 ? ` × ${q}` : ''}`);
+    });
+    return items;
+  } else {
+    const cfg = PRICING.single[state.tier];
+    const items = [];
+    cfg.rooms.forEach(r => {
+      const q = state.qty[`single.${state.tier}.${r.id}`] || 0;
+      if (q > 0) items.push(`${r.label}${q > 1 ? ` × ${q}` : ''}`);
+    });
+    return items;
+  }
+}
+
+function calcTotals() {
+  const lines = buildLines();
+  const subtotal = lines.reduce((s, l) => s + l.amt, 0);
+  let discount = 0;
+  if (state.discount.type === 'amount') discount = Math.min(state.discount.value || 0, subtotal);
+  else if (state.discount.type === 'percent') discount = subtotal * ((state.discount.value || 0) / 100);
+  const net = subtotal - discount;
+  const tax = state.tax.enabled ? net * ((state.tax.rate || 0) / 100) : 0;
+  const total = net + tax;
+  const deposit = total * ((state.deposit.percent || 0) / 100);
+  const balance = total - deposit;
+  return { lines, subtotal, discount, net, tax, total, deposit, balance };
+}
+
+// ============ RENDER ============
+function renderTierPills() {
+  const tiers = state.mode === 'full'
+    ? [['basic', 'Basic'], ['signature', 'Signature (+25%)']]
+    : [['standard', 'Standard'], ['signature', 'Signature (+25%)']];
+  $('#tierPills').innerHTML = tiers.map(([id, label]) =>
+    `<button class="pill ${state.tier === id ? 'active' : ''}" onclick="setTier('${id}')">${label}</button>`
+  ).join('');
+  const cfg = state.mode === 'full' ? PRICING.full[state.tier] : PRICING.single[state.tier];
+  $('#tierHint').textContent = cfg.sublabel || '';
+}
+
+function renderFull() {
+  const cfg = PRICING.full[state.tier];
+  const includesList = cfg.includes.map(s => `<li class="flex gap-2 text-sm"><span class="check">✓</span><span>${s}</span></li>`).join('');
+  const addonsHTML = cfg.addons.map(a => {
+    const q = getQty(a.id);
+    const max = a.multi ? (a.max || 9) : 1;
+    return `
+      <div class="room-card ${q > 0 ? 'has' : ''}">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-medium text-sm">${a.label}</div>
+            <div class="text-xs text-stone-500 mt-0.5">${fmt(a.price)} ${a.multi ? 'each' : ''}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="stepper-btn" ${q <= 0 ? 'disabled' : ''} onclick="setQty('${a.id}', ${q - 1})">−</button>
+            <div class="w-6 text-center text-sm font-semibold tabular-nums">${q}</div>
+            <button class="stepper-btn" ${q >= max ? 'disabled' : ''} onclick="setQty('${a.id}', ${q + 1})">+</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="space-y-6">
+      <div class="border border-line rounded-xl bg-stone-50 p-5">
+        <div class="flex items-baseline justify-between gap-3 flex-wrap">
+          <div>
+            <div class="serif text-xl font-semibold">${cfg.label}</div>
+            <div class="text-xs text-stone-500">${cfg.sublabel}</div>
+          </div>
+          <div class="serif text-2xl font-semibold accent">${fmt(cfg.base)}</div>
+        </div>
+        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-4">${includesList}</ul>
+      </div>
+      <div>
+        <div class="flex items-baseline justify-between mb-3">
+          <div class="serif text-lg font-semibold">Add-ons</div>
+          <div class="hint">All prices are per item</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${addonsHTML}</div>
+      </div>
+      ${renderCustomBlock()}
+    </div>`;
+}
+
+function renderSingle() {
+  const cfg = PRICING.single[state.tier];
+  const roomsHTML = cfg.rooms.map(r => {
+    const q = getQty(r.id);
+    const max = r.max || 6;
+    return `
+      <div class="room-card ${q > 0 ? 'has' : ''}">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-medium text-sm">${r.label}</div>
+            <div class="text-xs text-stone-500 mt-0.5">${fmt(r.price)} each — delivery included</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="stepper-btn" ${q <= 0 ? 'disabled' : ''} onclick="setQty('${r.id}', ${q - 1})">−</button>
+            <div class="w-6 text-center text-sm font-semibold tabular-nums">${q}</div>
+            <button class="stepper-btn" ${q >= max ? 'disabled' : ''} onclick="setQty('${r.id}', ${q + 1})">+</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="space-y-6">
+      <div class="border border-line rounded-xl bg-stone-50 p-5">
+        <div class="serif text-xl font-semibold">${cfg.label}</div>
+        <div class="text-xs text-stone-500">${cfg.sublabel}</div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${roomsHTML}</div>
+      ${renderCustomBlock()}
+    </div>`;
+}
+
+function renderCustomBlock() {
+  const items = state.custom.map((c, i) =>
+    `<div class="flex items-center justify-between gap-3 py-2 border-b border-line last:border-0">
+       <div class="text-sm">${escapeHtml(c.label)}</div>
+       <div class="flex items-center gap-3">
+         <div class="text-sm font-medium tabular-nums">${fmt(c.price)}</div>
+         <button class="text-stone-400 hover:text-stone-700 text-lg leading-none" onclick="removeCustom(${i})" title="Remove">×</button>
+       </div>
+     </div>`
+  ).join('');
+  return `
+    <details class="mt-2">
+      <summary><span class="serif text-lg font-semibold">Custom line item</span></summary>
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2">
+        <input class="field" id="customLabel" placeholder="Description (e.g. Outdoor patio)" />
+        <input type="number" class="field" id="customPrice" placeholder="Price" />
+        <button class="btn btn-primary" onclick="addCustom()">Add</button>
+      </div>
+      ${items ? `<div class="mt-3 border border-line rounded-md px-3">${items}</div>` : ''}
+    </details>`;
+}
+
+function renderQuote() {
+  const t = calcTotals();
+
+  $('#quoteLines').innerHTML = t.lines.length === 0
+    ? `<div class="empty">No items yet. Add a package or rooms to start.</div>`
+    : t.lines.map(l => `
+        <div class="quote-line">
+          <div class="desc">
+            ${escapeHtml(l.desc)}${l.custom ? ' <span class="text-xs text-stone-400">(custom)</span>' : ''}
+            ${l.qty > 1 ? `<div class="qty">${l.qty} × ${fmt(l.unit)}</div>` : ''}
+          </div>
+          <div class="amt">${fmt(l.amt)}</div>
+        </div>`).join('');
+
+  $('#subtotalAmt').textContent = fmt(t.subtotal);
+
+  if (t.discount > 0) {
+    $('#discountRow').classList.remove('hidden');
+    $('#discountRow').classList.add('flex');
+    const reason = state.discount.reason ? ` (${escapeHtml(state.discount.reason)})` : '';
+    const dispType = state.discount.type === 'percent' ? ` ${state.discount.value}%` : '';
+    $('#discountLabel').innerHTML = `Discount${dispType}${reason}`;
+    $('#discountAmt').textContent = '−' + fmt(t.discount);
+  } else {
+    $('#discountRow').classList.add('hidden');
+    $('#discountRow').classList.remove('flex');
+  }
+
+  if (state.tax.enabled) {
+    $('#taxRow').classList.remove('hidden');
+    $('#taxRow').classList.add('flex');
+    $('#taxLabel').textContent = `Tax (${state.tax.rate}%)`;
+    $('#taxAmt').textContent = fmt(t.tax);
+  } else {
+    $('#taxRow').classList.add('hidden');
+    $('#taxRow').classList.remove('flex');
+  }
+
+  $('#quoteTotal').textContent = fmt(t.total);
+
+  if (state.deposit.percent > 0 && t.total > 0) {
+    $('#depositRow').classList.remove('hidden');
+    $('#depositAmt').textContent = fmt(t.deposit);
+    $('#balanceAmt').textContent = fmt(t.balance);
+  } else {
+    $('#depositRow').classList.add('hidden');
+  }
+
+  const inc = buildIncluded();
+  $('#quoteIncluded').innerHTML = inc.length === 0
+    ? `<li class="text-stone-400 italic text-xs">No rooms selected yet</li>`
+    : inc.map(s => `<li class="flex gap-2"><span class="check">✓</span><span>${escapeHtml(s)}</span></li>`).join('');
+
+  // Header info
+  const c = state.client;
+  const parts = [c.name, c.address].filter(Boolean);
+  $('#quoteClientLine').textContent = parts.length ? parts.join(' · ') : 'Stage Depot — Home Staging';
+  $('#quoteMetaTop').textContent = c.date ? new Date(c.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  $('#quoteIdDisplay').textContent = state.quoteId || 'New quote (unsaved)';
+  $('#statusBadge').textContent = state.quoteId ? 'Saved' : 'Draft';
+  $('#statusBadge').className = 'badge ' + (state.quoteId ? 'saved' : 'draft');
+
+  // Extension preview
+  const months = state.extMonths || 0;
+  if (months > 0 && t.total > 0) {
+    let ext = 0;
+    if (months >= 1) ext += t.total * 0.60;
+    if (months >= 2) ext += (months - 1) * (t.total * 0.65);
+    const grand = t.total + ext;
+    $('#extPreview').innerHTML = `
+      <div class="border border-line rounded-md bg-stone-50 p-4 mt-2 space-y-1.5">
+        <div class="flex justify-between"><span>Original contract (8 weeks)</span><span class="tabular-nums">${fmt(t.total)}</span></div>
+        ${months >= 1 ? `<div class="flex justify-between text-stone-600"><span>+ Month 1 extension (60% off)</span><span class="tabular-nums">${fmt(t.total * 0.60)}</span></div>` : ''}
+        ${months >= 2 ? `<div class="flex justify-between text-stone-600"><span>+ Months 2–${months} (65% off, ${months - 1} mo)</span><span class="tabular-nums">${fmt((months - 1) * t.total * 0.65)}</span></div>` : ''}
+        <div class="flex justify-between font-semibold pt-2 border-t border-line"><span>Total with extensions</span><span class="tabular-nums accent">${fmt(grand)}</span></div>
+      </div>`;
+  } else {
+    $('#extPreview').innerHTML = '';
+  }
+}
+
+function render() {
+  document.querySelectorAll('.toggle-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === state.mode);
+  });
+  renderTierPills();
+  $('#modeBody').innerHTML = state.mode === 'full' ? renderFull() : renderSingle();
+  renderQuote();
+}
+
+// ============ FIELD BINDING ============
+function bindFields() {
+  const map = [
+    ['#clientName', 'client.name', 'value'],
+    ['#clientAddress', 'client.address', 'value'],
+    ['#clientEmail', 'client.email', 'value'],
+    ['#clientPhone', 'client.phone', 'value'],
+    ['#quoteDate', 'client.date', 'value'],
+    ['#installDate', 'client.installDate', 'value'],
+    ['#discountType', 'discount.type', 'value'],
+    ['#discountValue', 'discount.value', 'number'],
+    ['#discountReason', 'discount.reason', 'value'],
+    ['#taxEnabled', 'tax.enabled', 'checked'],
+    ['#taxRate', 'tax.rate', 'number'],
+    ['#depositPercent', 'deposit.percent', 'number'],
+    ['#paymentTerms', 'deposit.terms', 'value'],
+    ['#extMonths', 'extMonths', 'number']
+  ];
+  map.forEach(([sel, path, kind]) => {
+    const el = $(sel);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const val = kind === 'number' ? (parseFloat(el.value) || 0)
+                : kind === 'checked' ? el.checked
+                : el.value;
+      setPath(state, path, val);
+      touch();
+    });
+  });
+}
+
+function setPath(obj, path, val) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
+  cur[parts[parts.length - 1]] = val;
+}
+
+function syncFieldsFromState() {
+  $('#clientName').value = state.client.name || '';
+  $('#clientAddress').value = state.client.address || '';
+  $('#clientEmail').value = state.client.email || '';
+  $('#clientPhone').value = state.client.phone || '';
+  $('#quoteDate').value = state.client.date || '';
+  $('#installDate').value = state.client.installDate || '';
+  $('#discountType').value = state.discount.type || 'none';
+  $('#discountValue').value = state.discount.value || '';
+  $('#discountReason').value = state.discount.reason || '';
+  $('#taxEnabled').checked = !!state.tax.enabled;
+  $('#taxRate').value = state.tax.rate ?? 13;
+  $('#depositPercent').value = state.deposit.percent ?? 50;
+  $('#paymentTerms').value = state.deposit.terms || '';
+  $('#extMonths').value = state.extMonths || 0;
+}
+
+// ============ ACTIONS ============
+function newQuote() {
+  if (state.quoteId || hasContent()) {
+    if (!confirm('Start a new quote? Current draft will be cleared.\n(Saved quotes remain in History.)')) return;
+  }
+  state = defaultState();
+  saveCurrent();
+  syncFieldsFromState();
+  render();
+  toast('New quote started');
+}
+
+function hasContent() {
+  return state.client.name || state.client.address || Object.keys(state.qty).length > 0 || state.custom.length > 0;
+}
+
+function saveQuote() {
+  if (!state.quoteId) state.quoteId = nextQuoteId();
+  state.status = 'saved';
+  state.updatedAt = Date.now();
+  const all = loadQuotes();
+  const idx = all.findIndex(q => q.quoteId === state.quoteId);
+  const snap = JSON.parse(JSON.stringify(state));
+  if (idx >= 0) all[idx] = snap; else all.unshift(snap);
+  saveQuotes(all);
+  saveCurrent();
+  render();
+  toast(`Saved as ${state.quoteId}`);
+}
+
+function loadQuote(id) {
+  const all = loadQuotes();
+  const q = all.find(x => x.quoteId === id);
+  if (!q) return;
+  state = JSON.parse(JSON.stringify(q));
+  saveCurrent();
+  syncFieldsFromState();
+  render();
+  closeHistory();
+  toast(`Loaded ${id}`);
+}
+
+function duplicateQuote(id) {
+  const all = loadQuotes();
+  const q = all.find(x => x.quoteId === id);
+  if (!q) return;
+  state = JSON.parse(JSON.stringify(q));
+  state.quoteId = null;
+  state.status = 'draft';
+  state.createdAt = Date.now();
+  state.updatedAt = Date.now();
+  saveCurrent();
+  syncFieldsFromState();
+  render();
+  closeHistory();
+  toast('Duplicated as new draft');
+}
+
+function deleteQuote(id) {
+  if (!confirm(`Delete ${id}? This cannot be undone.`)) return;
+  const all = loadQuotes().filter(q => q.quoteId !== id);
+  saveQuotes(all);
+  if (state.quoteId === id) {
+    state.quoteId = null;
+    state.status = 'draft';
+    saveCurrent();
+    render();
+  }
+  renderHistory();
+  toast(`Deleted ${id}`);
+}
+
+function openHistory() { renderHistory(); $('#historyModal').classList.add('open'); }
+function closeHistory() { $('#historyModal').classList.remove('open'); }
+
+function renderHistory() {
+  const all = loadQuotes().sort((a, b) => b.updatedAt - a.updatedAt);
+  if (all.length === 0) {
+    $('#historyList').innerHTML = `<div class="p-12 text-center text-stone-400">No saved quotes yet.</div>`;
+    return;
+  }
+  $('#historyList').innerHTML = all.map(q => {
+    const t = (() => {
+      const saved = state;
+      state = q;
+      const r = calcTotals();
+      state = saved;
+      return r.total;
+    })();
+    const date = new Date(q.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `
+      <div class="px-6 py-4 border-b border-line hover:bg-stone-50 flex items-center gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm">${escapeHtml(q.client.name || 'Untitled client')}</span>
+            <span class="text-xs text-stone-400">${q.quoteId}</span>
+          </div>
+          <div class="text-xs text-stone-500 mt-0.5">${escapeHtml(q.client.address || '—')} · updated ${date}</div>
+        </div>
+        <div class="serif text-lg font-semibold accent tabular-nums">${fmt(t)}</div>
+        <div class="flex gap-1">
+          <button class="btn" onclick="loadQuote('${q.quoteId}')">Open</button>
+          <button class="btn btn-ghost" onclick="duplicateQuote('${q.quoteId}')" title="Duplicate">⎘</button>
+          <button class="btn btn-ghost" onclick="deleteQuote('${q.quoteId}')" title="Delete">🗑</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============ EXPORT ============
+function buildQuoteHTML() {
+  const t = calcTotals();
+  const c = state.client;
+  const inc = buildIncluded();
+  const dateStr = c.date ? new Date(c.date + 'T00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  const installStr = c.installDate ? new Date(c.installDate + 'T00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+  const linesHTML = t.lines.map(l => `
+    <tr>
+      <td style="padding: 10px 0; border-bottom: 1px solid #e7e1d6;">
+        <div style="font-size: 13px;">${escapeHtml(l.desc)}</div>
+        ${l.qty > 1 ? `<div style="font-size: 11px; color: #78716c; margin-top: 2px;">${l.qty} × ${fmt(l.unit)}</div>` : ''}
+      </td>
+      <td style="padding: 10px 0; border-bottom: 1px solid #e7e1d6; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; font-size: 13px; white-space: nowrap;">${fmt(l.amt)}</td>
+    </tr>`).join('');
+
+  const incHTML = inc.map(s => `<li style="margin: 4px 0; font-size: 12px;">• ${escapeHtml(s)}</li>`).join('');
+
+  const discRow = t.discount > 0 ? `
+    <tr><td style="padding: 4px 0; color: #78716c; font-size: 12px;">Discount${state.discount.reason ? ' (' + escapeHtml(state.discount.reason) + ')' : ''}${state.discount.type === 'percent' ? ' ' + state.discount.value + '%' : ''}</td>
+        <td style="padding: 4px 0; text-align: right; color: #8a5a2b; font-variant-numeric: tabular-nums; font-size: 12px;">−${fmt(t.discount)}</td></tr>` : '';
+  const taxRow = state.tax.enabled ? `
+    <tr><td style="padding: 4px 0; color: #78716c; font-size: 12px;">Tax (${state.tax.rate}%)</td>
+        <td style="padding: 4px 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px;">${fmt(t.tax)}</td></tr>` : '';
+  const depRow = state.deposit.percent > 0 && t.total > 0 ? `
+    <div style="margin-top: 10px; padding: 12px; background: #faf7f1; border-radius: 6px; font-size: 12px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Deposit due on signing (${state.deposit.percent}%)</span><span style="font-weight: 600;">${fmt(t.deposit)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><span>Balance due on install</span><span style="font-weight: 600;">${fmt(t.balance)}</span></div>
+    </div>` : '';
+
+  return `
+    <div style="font-family: 'Inter', system-ui, sans-serif; color: #1c1917; padding: 40px; background: white; max-width: 720px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #1c1917;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; background: #8a5a2b; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600;">S</div>
+            <div>
+              <div style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; line-height: 1;">Stage Depot</div>
+              <div style="font-size: 11px; color: #78716c; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em;">Home Staging Quote</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: right; font-size: 12px;">
+          <div style="font-weight: 600;">${state.quoteId || 'DRAFT'}</div>
+          <div style="color: #78716c; margin-top: 4px;">${dateStr}</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+        <div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; margin-bottom: 6px;">Prepared for</div>
+          <div style="font-size: 14px; font-weight: 600;">${escapeHtml(c.name || '—')}</div>
+          ${c.address ? `<div style="font-size: 12px; color: #57534e; margin-top: 2px;">${escapeHtml(c.address)}</div>` : ''}
+          ${c.email ? `<div style="font-size: 12px; color: #57534e;">${escapeHtml(c.email)}</div>` : ''}
+          ${c.phone ? `<div style="font-size: 12px; color: #57534e;">${escapeHtml(c.phone)}</div>` : ''}
+        </div>
+        <div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; margin-bottom: 6px;">Project</div>
+          <div style="font-size: 12px;">Initial contract: 8 weeks</div>
+          ${installStr ? `<div style="font-size: 12px; color: #57534e;">Install: ${installStr}</div>` : ''}
+        </div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+        <thead>
+          <tr><th style="text-align: left; padding-bottom: 8px; border-bottom: 2px solid #1c1917; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; font-weight: 500;">Description</th>
+              <th style="text-align: right; padding-bottom: 8px; border-bottom: 2px solid #1c1917; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; font-weight: 500;">Amount</th></tr>
+        </thead>
+        <tbody>${linesHTML}</tbody>
+      </table>
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+        <tr><td style="padding: 4px 0; font-size: 12px;">Subtotal</td>
+            <td style="padding: 4px 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px;">${fmt(t.subtotal)}</td></tr>
+        ${discRow}
+        ${taxRow}
+        <tr><td style="padding: 10px 0 4px; font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; border-top: 2px solid #1c1917;">Total</td>
+            <td style="padding: 10px 0 4px; text-align: right; font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: #8a5a2b; font-variant-numeric: tabular-nums; border-top: 2px solid #1c1917;">${fmt(t.total)}</td></tr>
+      </table>
+
+      ${depRow}
+
+      <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e7e1d6;">
+        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; margin-bottom: 8px;">What's included</div>
+        <ul style="list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 24px;">${incHTML}</ul>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e7e1d6; font-size: 11px; color: #57534e; line-height: 1.6;">
+        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; margin-bottom: 6px;">Payment terms</div>
+        ${escapeHtml(state.deposit.terms || '')}
+      </div>
+
+      <div style="margin-top: 16px; font-size: 11px; color: #57534e; line-height: 1.6;">
+        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #78716c; margin-bottom: 6px;">Extension policy</div>
+        Initial contract is 8 weeks. After that, the first month extension is 60% off the original contract. Each subsequent month is 65% off the original contract.
+      </div>
+
+      <div style="margin-top: 36px; text-align: center; font-size: 10px; color: #a8a29e;">
+        Stage Depot · ${state.quoteId || 'Draft quote'}
+      </div>
+    </div>`;
+}
+
+function downloadPDF() {
+  const target = $('#pdfTarget');
+  target.innerHTML = buildQuoteHTML();
+  const fname = `${state.quoteId || 'StageDepot-Draft'}-${(state.client.name || 'quote').replace(/[^a-z0-9]+/gi, '-')}.pdf`;
+  html2pdf().set({
+    margin: 0,
+    filename: fname,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' }
+  }).from(target.firstElementChild).save().then(() => {
+    target.innerHTML = '';
+    toast('PDF downloaded');
+  });
+}
+
+function emailQuote() {
+  const c = state.client;
+  const t = calcTotals();
+  const subject = `Staging quote${state.quoteId ? ' ' + state.quoteId : ''}${c.address ? ' — ' + c.address : ''}`;
+  const inc = buildIncluded();
+
+  const body = [
+    `Hi${c.name ? ' ' + c.name.split(' ')[0] : ''},`,
+    '',
+    `Thanks for considering Stage Depot. Here is your staging quote${c.address ? ' for ' + c.address : ''}.`,
+    '',
+    `Total: ${fmt(t.total)}`,
+    state.deposit.percent > 0 ? `Deposit on signing (${state.deposit.percent}%): ${fmt(t.deposit)}` : '',
+    state.deposit.percent > 0 ? `Balance on install: ${fmt(t.balance)}` : '',
+    '',
+    'Included in this package:',
+    ...inc.map(i => '  • ' + i),
+    '',
+    'Payment terms: ' + (state.deposit.terms || ''),
+    '',
+    'Extension policy: Initial contract is 8 weeks. After that, the first month extension is 60% off the original. Each subsequent month is 65% off.',
+    '',
+    'I have attached a full PDF of the quote. Let me know if you have any questions.',
+    '',
+    'Best,',
+    'Stage Depot'
+  ].filter(Boolean).join('\n');
+
+  // Trigger PDF download first so the user can attach it
+  downloadPDF();
+  setTimeout(() => {
+    const url = `mailto:${encodeURIComponent(c.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  }, 600);
+}
+
+function copyQuote() {
+  const t = calcTotals();
+  const c = state.client;
+  const inc = buildIncluded();
+  const dateStr = c.date ? new Date(c.date + 'T00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+  const out = [];
+  out.push(`STAGE DEPOT — STAGING QUOTE${state.quoteId ? '  ' + state.quoteId : ''}`);
+  out.push('');
+  if (c.name) out.push(`Client: ${c.name}`);
+  if (c.address) out.push(`Property: ${c.address}`);
+  if (dateStr) out.push(`Date: ${dateStr}`);
+  out.push('');
+  out.push('LINE ITEMS');
+  out.push('-----------------------------------------');
+  t.lines.forEach(l => {
+    const left = l.qty > 1 ? `${l.desc} (${l.qty} × ${fmt(l.unit)})` : l.desc;
+    out.push(`${left.padEnd(38).slice(0, 38)} ${fmt(l.amt).padStart(10)}`);
+  });
+  out.push('-----------------------------------------');
+  out.push(`${'Subtotal'.padEnd(38)} ${fmt(t.subtotal).padStart(10)}`);
+  if (t.discount > 0) out.push(`${'Discount'.padEnd(38)} ${('−' + fmt(t.discount)).padStart(10)}`);
+  if (state.tax.enabled) out.push(`${('Tax (' + state.tax.rate + '%)').padEnd(38)} ${fmt(t.tax).padStart(10)}`);
+  out.push(`${'TOTAL'.padEnd(38)} ${fmt(t.total).padStart(10)}`);
+  if (state.deposit.percent > 0 && t.total > 0) {
+    out.push('');
+    out.push(`Deposit on signing (${state.deposit.percent}%): ${fmt(t.deposit)}`);
+    out.push(`Balance on install: ${fmt(t.balance)}`);
+  }
+  out.push('');
+  out.push('INCLUDED IN THIS PACKAGE');
+  inc.forEach(i => out.push(`  • ${i}`));
+  out.push('');
+  out.push('EXTENSIONS');
+  out.push('Initial contract is 8 weeks. After that, the first month');
+  out.push('extension is 60% off the original contract. Each subsequent');
+  out.push('month is 65% off the original contract.');
+
+  navigator.clipboard.writeText(out.join('\n')).then(() => {
+    const btn = $('#copyBtn');
+    const old = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = old, 1500);
+  });
+}
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ============ INIT ============
+(function init() {
+  const saved = loadCurrent();
+  if (saved && typeof saved === 'object') {
+    state = Object.assign(defaultState(), saved);
+    state.client = Object.assign(defaultState().client, saved.client || {});
+    state.discount = Object.assign(defaultState().discount, saved.discount || {});
+    state.tax = Object.assign(defaultState().tax, saved.tax || {});
+    state.deposit = Object.assign(defaultState().deposit, saved.deposit || {});
+  }
+  syncFieldsFromState();
+  bindFields();
+  render();
+})();
+</script>
+
+</body>
+</html>
