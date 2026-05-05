@@ -262,15 +262,19 @@ export function QuoteBuilder() {
       ...s,
       client: { ...s.client, address: pick.fullAddress },
     }));
+    // Pre-fill the rate + label on the tax row, but DO NOT enable it.
+    // Whether tax actually applies depends on contract structure (especially
+    // for DecoDen, where residential leases are GST/HST exempt). Shauly
+    // ticks "Apply tax" only when he confirms.
     if (pick.province) {
       const tax = provinceTaxRate(pick.province);
       if (tax) {
         patch((s) => ({
           ...s,
-          tax: { enabled: true, rate: tax.rate, label: tax.label },
+          tax: { ...s.tax, rate: tax.rate, label: tax.label },
         }));
         showToast(
-          `${pick.province} detected, tax set to ${tax.rate}% ${tax.label}`
+          `${pick.province} detected. Tax preset to ${tax.rate}% ${tax.label} (toggle Apply Tax if it applies).`
         );
         return;
       }
@@ -914,6 +918,19 @@ export function QuoteBuilder() {
                   </span>
                 </div>
               </div>
+              {isDecoden ? (
+                <div className="hint mt-2">
+                  Long-term residential leases (1+ month occupancy) are
+                  generally GST/HST exempt. Leave this off unless the
+                  contract is structured as a furniture rental + service.
+                </div>
+              ) : (
+                <div className="hint mt-2">
+                  Address autofills the rate and label. Tax stays off until
+                  you tick Apply Tax. The PDF will show before-tax and
+                  with-tax totals when enabled.
+                </div>
+              )}
             </div>
 
             <div>
