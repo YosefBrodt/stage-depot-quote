@@ -1,4 +1,10 @@
-import { defaultState, qtyKey, type QuoteState } from "./pricing";
+import {
+  defaultState,
+  qtyKey,
+  type Mode,
+  type QuoteState,
+  type Tier,
+} from "./pricing";
 
 export type Template = {
   id: string;
@@ -9,8 +15,8 @@ export type Template = {
 
 function withQty(
   base: QuoteState,
-  mode: "full" | "single",
-  tier: "basic" | "signature" | "standard",
+  mode: Mode,
+  tier: Tier,
   qtyMap: Record<string, number>
 ): QuoteState {
   const next: QuoteState = {
@@ -87,6 +93,24 @@ export const TEMPLATES: Template[] = [
         bedroom: 3,
         livingroom: 1,
       });
+    },
+  },
+  {
+    id: "decoden-1br",
+    label: "DecoDen 1BR (monthly)",
+    description: "Long-term furnished apartment, $499/mo",
+    build: () => {
+      const s = defaultState();
+      return withQty(s, "decoden", "monthly", { "1br": 1 });
+    },
+  },
+  {
+    id: "decoden-2br",
+    label: "DecoDen 2BR (monthly)",
+    description: "Long-term furnished apartment, $699/mo",
+    build: () => {
+      const s = defaultState();
+      return withQty(s, "decoden", "monthly", { "2br": 1 });
     },
   },
 ];

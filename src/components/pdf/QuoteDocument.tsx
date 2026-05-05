@@ -294,6 +294,10 @@ function packageSubLine(state: QuoteState): string | null {
   return null;
 }
 
+function isDecodenMode(state: QuoteState): boolean {
+  return state.mode === "decoden";
+}
+
 export function QuoteDocument({ state }: { state: QuoteState }) {
   const t = calcTotals(state);
   const inc = buildIncluded(state);
@@ -301,6 +305,11 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
   const dateStr = formatLongDate(c.date);
   const installStr = formatLongDate(c.installDate);
   const subLine = packageSubLine(state);
+  const decoden = isDecodenMode(state);
+  const headerKicker = decoden ? "DecoDen Rental Quote" : "Home Staging Quote";
+  const docTitle = decoden
+    ? `Stager Depot DecoDen Quote ${state.quoteId || ""}`.trim()
+    : `Stager Depot Quote ${state.quoteId || ""}`.trim();
 
   // Smarter "Prepared for" eyebrow + content:
   // - Has name: classic "Prepared for" with full client block
@@ -312,11 +321,11 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
   const preparedEyebrow = hasName ? "Prepared for" : "Property";
 
   return (
-    <Document title={`Stager Depot Quote ${state.quoteId || ""}`.trim()}>
+    <Document title={docTitle}>
       <Page size="LETTER" style={styles.page} wrap>
         <View style={styles.headerBand}>
           <View style={styles.headerLeft}>
-            <Text style={styles.brandKicker}>Home Staging Quote</Text>
+            <Text style={styles.brandKicker}>{headerKicker}</Text>
             <SDLogo width={130} />
           </View>
           <View style={styles.metaRight}>
@@ -349,12 +358,19 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
                 )}
               </View>
               <View style={styles.col}>
-                <Text style={styles.eyebrow}>Project</Text>
+                <Text style={styles.eyebrow}>
+                  {decoden ? "Term" : "Project"}
+                </Text>
                 <Text style={styles.preparedSub}>
-                  Initial contract: 8 weeks
+                  {decoden
+                    ? "Long-term monthly rental"
+                    : "Initial contract: 8 weeks"}
                 </Text>
                 {installStr ? (
-                  <Text style={styles.preparedSub}>Install: {installStr}</Text>
+                  <Text style={styles.preparedSub}>
+                    {decoden ? "Move-in: " : "Install: "}
+                    {installStr}
+                  </Text>
                 ) : null}
               </View>
             </View>
@@ -439,13 +455,24 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
 
           <View style={styles.grandCard}>
             <View>
-              <Text style={styles.grandLabelEyebrow}>Total Due</Text>
-              <Text style={styles.grandLabel}>Quote Total</Text>
+              <Text style={styles.grandLabelEyebrow}>
+                {decoden ? "Per Unit" : "Total Due"}
+              </Text>
+              <Text style={styles.grandLabel}>
+                {decoden ? "Monthly Rate" : "Quote Total"}
+              </Text>
             </View>
-            <Text style={styles.grandAmt}>{fmt(t.total)}</Text>
+            <Text style={styles.grandAmt}>
+              {fmt(t.total)}
+              {decoden ? (
+                <Text style={{ fontSize: 12, color: "rgba(241,227,200,0.7)" }}>
+                  {" "}/mo
+                </Text>
+              ) : null}
+            </Text>
           </View>
 
-          {state.deposit.percent > 0 && t.total > 0 ? (
+          {!decoden && state.deposit.percent > 0 && t.total > 0 ? (
             <View style={styles.depositCard}>
               <View style={styles.depositRow}>
                 <Text>Deposit due on signing ({state.deposit.percent}%)</Text>
@@ -466,18 +493,25 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
           ) : null}
 
           <View style={[styles.section, { marginTop: 18, paddingTop: 14 }]}>
-            <Text style={styles.eyebrow}>Payment terms</Text>
-            <Text style={styles.termsText}>{state.deposit.terms || ""}</Text>
-          </View>
-
-          <View style={[styles.section, { marginTop: 12, paddingTop: 10 }]}>
-            <Text style={styles.eyebrow}>Extension policy</Text>
+            <Text style={styles.eyebrow}>
+              {decoden ? "Billing terms" : "Payment terms"}
+            </Text>
             <Text style={styles.termsText}>
-              Initial contract is 8 weeks. After that, the first month
-              extension is 60% off the original contract. Each subsequent month
-              is 65% off the original contract.
+              {decoden
+                ? "Monthly rental, billed each month. Renews automatically. Cancel with 30 days' notice. Damage deposit and delivery quoted separately based on unit and address."
+                : state.deposit.terms || ""}
             </Text>
           </View>
+
+          {!decoden ? (
+            <View style={[styles.section, { marginTop: 12, paddingTop: 10 }]}>
+              <Text style={styles.eyebrow}>Extension policy</Text>
+              <Text style={styles.termsText}>
+                Initial contract is 8 weeks. After that, every additional
+                4-week extension is 60% of the original contract.
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.footerBand} fixed>

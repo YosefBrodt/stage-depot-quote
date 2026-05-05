@@ -11,8 +11,8 @@ export function localDateStr(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-export type Mode = "full" | "single";
-export type Tier = "basic" | "signature" | "standard";
+export type Mode = "full" | "single" | "decoden";
+export type Tier = "basic" | "signature" | "standard" | "monthly";
 
 export type Addon = {
   id: string;
@@ -43,9 +43,23 @@ export type SingleTier = {
   rooms: Room[];
 };
 
+export type DecoDenUnit = {
+  id: string;
+  label: string;
+  price: number;
+  contents: string[];
+};
+
+export type DecoDenTier = {
+  label: string;
+  sublabel: string;
+  units: DecoDenUnit[];
+};
+
 export const PRICING: {
   full: { basic: FullTier; signature: FullTier };
   single: { standard: SingleTier; signature: SingleTier };
+  decoden: { monthly: DecoDenTier };
 } = {
   full: {
     basic: {
@@ -111,6 +125,89 @@ export const PRICING: {
         { id: "livingroom", label: "Living Room", price: 1999, max: 3 },
         { id: "diningroom", label: "Dining Room", price: 1629, max: 2 },
         { id: "kitchen", label: "Kitchen", price: 1629, max: 2 },
+      ],
+    },
+  },
+  decoden: {
+    monthly: {
+      label: "DecoDen monthly rental",
+      sublabel:
+        "Long-term furnished apartment package, billed monthly. No 8-week limit.",
+      units: [
+        {
+          id: "studio",
+          label: "Studio",
+          price: 399,
+          contents: [
+            "Queen platform bed + mattress + linen set",
+            "Nightstand + table lamp",
+            "2-seater sofa or loveseat",
+            "Coffee table",
+            "Floor lamp",
+            "Rug",
+            "Dining table + 2 chairs",
+            "Basic kitchenware",
+            "Branded coffee machine",
+            "Bath towels + hand towels",
+            "1 bathrobe",
+          ],
+        },
+        {
+          id: "1br",
+          label: "1 Bedroom",
+          price: 499,
+          contents: [
+            "Queen or King bed + mattress + linen set",
+            "2 nightstands + 2 table lamps",
+            "2-seater sofa, accent chair",
+            "Coffee table + 2 end tables",
+            "Floor lamp + table lamps",
+            "Rug",
+            "Dining table + 4 chairs",
+            "Basic kitchenware",
+            "Branded coffee machine",
+            "Hand + bath towels",
+            "2 bathrobes",
+          ],
+        },
+        {
+          id: "2br",
+          label: "2 Bedroom",
+          price: 699,
+          contents: [
+            "2 Queen beds + mattresses + linen sets",
+            "4 nightstands + 4 table lamps",
+            "3-seater sofa, accent chair",
+            "Coffee table + 2 end tables",
+            "Media table",
+            "Floor lamp + table lamps",
+            "Rugs (living + bedrooms)",
+            "Dining table + 4 to 6 chairs",
+            "Basic kitchenware",
+            "Branded coffee machine",
+            "Hand + bath towels",
+            "2 bathrobes",
+          ],
+        },
+        {
+          id: "3br",
+          label: "3 Bedroom",
+          price: 899,
+          contents: [
+            "3 beds (mix of Queen + King) + mattresses + linen sets",
+            "6 nightstands + 6 table lamps",
+            "3-seater sofa, 2 accent chairs",
+            "Coffee table + 2 end tables",
+            "Media table",
+            "Floor lamp + table lamps",
+            "Rugs (living + bedrooms)",
+            "Dining table + 6 chairs",
+            "Basic kitchenware",
+            "Branded coffee machine",
+            "Hand + bath towels",
+            "Bathrobes",
+          ],
+        },
       ],
     },
   },
@@ -214,12 +311,24 @@ export function buildLines(state: QuoteState): QuoteLine[] {
       const q = state.qty[qtyKey("full", tier, a.id)] || 0;
       if (q > 0) lines.push({ desc: a.label, qty: q, unit: a.price, amt: q * a.price });
     });
-  } else {
+  } else if (state.mode === "single") {
     const tier = state.tier === "signature" ? "signature" : "standard";
     const cfg = PRICING.single[tier];
     cfg.rooms.forEach((r) => {
       const q = state.qty[qtyKey("single", tier, r.id)] || 0;
       if (q > 0) lines.push({ desc: r.label, qty: q, unit: r.price, amt: q * r.price });
+    });
+  } else if (state.mode === "decoden") {
+    const cfg = PRICING.decoden.monthly;
+    cfg.units.forEach((u) => {
+      const q = state.qty[qtyKey("decoden", "monthly", u.id)] || 0;
+      if (q > 0)
+        lines.push({
+          desc: `${u.label} (DecoDen monthly)`,
+          qty: q,
+          unit: u.price,
+          amt: q * u.price,
+        });
     });
   }
   state.custom.forEach((c) =>
@@ -238,7 +347,8 @@ export function buildIncluded(state: QuoteState): string[] {
       if (q > 0) items.push(`${a.label}${q > 1 ? ` × ${q}` : ""}`);
     });
     return items;
-  } else {
+  }
+  if (state.mode === "single") {
     const tier = state.tier === "signature" ? "signature" : "standard";
     const cfg = PRICING.single[tier];
     const items: string[] = [];
@@ -248,6 +358,18 @@ export function buildIncluded(state: QuoteState): string[] {
     });
     return items;
   }
+  // decoden: surface the contents of whichever unit was picked
+  const cfg = PRICING.decoden.monthly;
+  const items: string[] = [];
+  cfg.units.forEach((u) => {
+    const q = state.qty[qtyKey("decoden", "monthly", u.id)] || 0;
+    if (q > 0) items.push(...u.contents);
+  });
+  return items;
+}
+
+export function isDecoden(state: QuoteState): boolean {
+  return state.mode === "decoden";
 }
 
 export function calcTotals(state: QuoteState): Totals {

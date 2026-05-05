@@ -175,7 +175,14 @@ export function QuoteBuilder() {
     patch((s) => ({
       ...s,
       mode,
-      tier: mode === "full" ? "basic" : "standard",
+      tier:
+        mode === "full"
+          ? "basic"
+          : mode === "single"
+          ? "standard"
+          : "monthly",
+      qty: {},
+      custom: s.custom,
     }));
   }
 
@@ -363,42 +370,93 @@ export function QuoteBuilder() {
       const c = state.client;
       const t = totals;
       const inc = included;
-      const subject = `Staging quote${state.quoteId ? " " + state.quoteId : ""}${
-        c.address ? " for " + c.address : ""
-      }`;
-      const greeting = c.name ? `Hi ${c.name.split(" ")[0]},` : "Hi,";
-      const lines = [
-        greeting,
-        "",
-        `Thanks for considering Stager Depot. Here is your staging quote${
-          c.address ? " for " + c.address : ""
-        }.`,
-        "",
-        `Total: ${fmt(t.total)}`,
-        state.deposit.percent > 0
-          ? `Deposit on signing (${state.deposit.percent}%): ${fmt(t.deposit)}`
-          : "",
-        state.deposit.percent > 0
-          ? `Balance on install: ${fmt(t.balance)}`
-          : "",
-        "",
-        "Included in this package:",
-        ...inc.map((i) => "  • " + i),
-        "",
-        "Payment terms: " + (state.deposit.terms || ""),
-        "",
-        "The PDF of the full quote was just downloaded to your computer. Please attach it to this email before sending.",
-        "",
-        "Best,",
-        "Stager Depot",
-      ];
-      const body = lines.filter((l) => l !== null && l !== undefined).join("\n");
+      const decoden = state.mode === "decoden";
+
+      // Subject: short, specific, scannable in a phone notification.
+      // Studies show subject lines under ~50 chars get the best open rate.
+      const subject = decoden
+        ? `DecoDen rental quote${
+            state.quoteId ? " " + state.quoteId : ""
+          }${c.address ? " for " + c.address : ""}`
+        : `Staging quote${state.quoteId ? " " + state.quoteId : ""}${
+            c.address ? " for " + c.address : ""
+          }`;
+
+      const firstName = c.name ? c.name.split(" ")[0] : "";
+      const greeting = firstName ? `Hi ${firstName},` : "Hi,";
+      const addressClause = c.address ? ` for ${c.address}` : "";
+
+      // Body: lead with the value (total), then a tight bullet list, then ONE
+      // clear ask. Conversion patterns we're following:
+      //   - First sentence states the punchline, not a generic thank-you
+      //   - Bullets are scannable on a phone
+      //   - Single CTA ("reply with an install date") removes ambiguity
+      //   - "Either way" framing reduces reply friction for not-ready leads
+      //   - Sign-off references stagerdepot.com so they have a brand anchor
+      const lines: string[] = [];
+      lines.push(greeting);
+      lines.push("");
+
+      if (decoden) {
+        lines.push(
+          `Thanks for the call. Here's your DecoDen monthly rental quote${addressClause}.`
+        );
+        lines.push("");
+        lines.push(`  Monthly rate: ${fmt(t.total)}/mo`);
+        if (t.discount > 0) lines.push(`  (Discount applied: ${fmt(t.discount)})`);
+        lines.push("");
+        if (inc.length > 0) {
+          lines.push("Each unit comes with:");
+          inc.slice(0, 8).forEach((i) => lines.push(`  • ${i}`));
+          if (inc.length > 8) lines.push(`  • plus more (full list in the PDF)`);
+          lines.push("");
+        }
+        lines.push(
+          "Full PDF is attached above with the complete inventory and terms."
+        );
+        lines.push("");
+        lines.push(
+          "Want to move forward? Reply with a target move-in date and we'll get the unit prepped. Happy to answer any questions either way."
+        );
+      } else {
+        lines.push(
+          `Thanks for the call. Here's your staging quote${addressClause}.`
+        );
+        lines.push("");
+        lines.push(`  Total: ${fmt(t.total)} CAD`);
+        if (state.deposit.percent > 0) {
+          lines.push(
+            `  Deposit on signing (${state.deposit.percent}%): ${fmt(t.deposit)}`
+          );
+          lines.push(`  Balance on install: ${fmt(t.balance)}`);
+        }
+        lines.push("");
+        if (inc.length > 0) {
+          lines.push("What's included:");
+          inc.forEach((i) => lines.push(`  • ${i}`));
+          lines.push("");
+        }
+        lines.push(
+          "Full PDF is attached above with the complete breakdown, payment terms, and extension policy."
+        );
+        lines.push("");
+        lines.push(
+          "Want to lock it in? Just reply with a confirmed install date and we'll send the deposit invoice. Happy to answer questions either way."
+        );
+      }
+
+      lines.push("");
+      lines.push("—");
+      lines.push("Stager Depot");
+      lines.push("stagerdepot.com");
+
+      const body = lines.join("\n");
 
       const gmail = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=${encodeURIComponent(
         c.email || ""
       )}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.open(gmail, "_blank");
-      showToast("PDF downloaded, Gmail opened");
+      showToast("PDF downloaded. Drag it into the Gmail draft to attach.");
     } catch (err) {
       showToast(String(err));
     } finally {
@@ -521,12 +579,18 @@ export function QuoteBuilder() {
   const tiers: [Tier, string][] =
     state.mode === "full"
       ? [["basic", "Basic"], ["signature", "Signature (+25%)"]]
-      : [["standard", "Standard"], ["signature", "Signature (+25%)"]];
+      : state.mode === "single"
+      ? [["standard", "Standard"], ["signature", "Signature (+25%)"]]
+      : [];
 
   const tierCfg =
     state.mode === "full"
       ? PRICING.full[state.tier === "signature" ? "signature" : "basic"]
-      : PRICING.single[state.tier === "signature" ? "signature" : "standard"];
+      : state.mode === "single"
+      ? PRICING.single[state.tier === "signature" ? "signature" : "standard"]
+      : PRICING.decoden.monthly;
+
+  const isDecoden = state.mode === "decoden";
 
   const headerLine = [state.client.name, state.client.address]
     .filter(Boolean)
@@ -693,23 +757,33 @@ export function QuoteBuilder() {
               >
                 Single Room(s)
               </div>
+              <div
+                className={`toggle-tab ${
+                  state.mode === "decoden" ? "active" : ""
+                }`}
+                onClick={() => setMode("decoden")}
+              >
+                DecoDen Rental
+              </div>
             </div>
             <div className="p-6">
-              <div className="mb-6">
-                <div className="label-eyebrow mb-2.5">Tier</div>
-                <div className="flex gap-2 flex-wrap">
-                  {tiers.map(([id, label]) => (
-                    <button
-                      key={id}
-                      className={`pill ${state.tier === id ? "active" : ""}`}
-                      onClick={() => setTier(id)}
-                    >
-                      {label}
-                    </button>
-                  ))}
+              {!isDecoden && tiers.length > 0 ? (
+                <div className="mb-6">
+                  <div className="label-eyebrow mb-2.5">Tier</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {tiers.map(([id, label]) => (
+                      <button
+                        key={id}
+                        className={`pill ${state.tier === id ? "active" : ""}`}
+                        onClick={() => setTier(id)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="hint mt-2">{tierCfg.sublabel}</div>
                 </div>
-                <div className="hint mt-2">{tierCfg.sublabel}</div>
-              </div>
+              ) : null}
 
               {state.mode === "full" ? (
                 <FullModeBody
@@ -717,9 +791,14 @@ export function QuoteBuilder() {
                   qty={(id) => getQty(id)}
                   setQty={setQty}
                 />
-              ) : (
+              ) : state.mode === "single" ? (
                 <SingleModeBody
                   tier={state.tier === "signature" ? "signature" : "standard"}
+                  qty={(id) => getQty(id)}
+                  setQty={setQty}
+                />
+              ) : (
+                <DecoDenBody
                   qty={(id) => getQty(id)}
                   setQty={setQty}
                 />
@@ -895,6 +974,7 @@ export function QuoteBuilder() {
             />
           </div>
 
+          {!isDecoden ? (
           <div className="surface-card p-6">
             <details>
               <summary>
@@ -931,6 +1011,7 @@ export function QuoteBuilder() {
               </div>
             </details>
           </div>
+          ) : null}
         </section>
 
         <aside className="lg:sticky lg:top-24 self-start">
@@ -1011,9 +1092,16 @@ export function QuoteBuilder() {
                 </div>
               ) : null}
               <div className="flex items-baseline justify-between pt-3 border-t border-line mt-2">
-                <div className="label-eyebrow">Total</div>
+                <div className="label-eyebrow">
+                  {isDecoden ? "Monthly Rate" : "Total"}
+                </div>
                 <div className="total-row text-olive">
                   {fmt(totals.total)}
+                  {isDecoden ? (
+                    <span className="text-base text-muted ml-1 font-medium">
+                      /mo
+                    </span>
+                  ) : null}
                 </div>
               </div>
               {state.deposit.percent > 0 && totals.total > 0 ? (
@@ -1053,11 +1141,23 @@ export function QuoteBuilder() {
             </div>
 
             <div className="px-6 py-4 border-t border-line">
-              <div className="label-eyebrow mb-1.5">Extensions</div>
-              <p className="hint">
-                After 8 weeks, the first additional month is 60% of original
-                contract. Subsequent months are 65% of original.
-              </p>
+              {isDecoden ? (
+                <>
+                  <div className="label-eyebrow mb-1.5">Term</div>
+                  <p className="hint">
+                    Long-term monthly rental. No 8-week limit. Renews
+                    automatically each month.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="label-eyebrow mb-1.5">Extensions</div>
+                  <p className="hint">
+                    After 8 weeks, the first additional month is 60% of
+                    original contract. Subsequent months are 65% of original.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </aside>
@@ -1312,6 +1412,79 @@ function SingleModeBody(props: {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function DecoDenBody(props: {
+  qty: (id: string) => number;
+  setQty: (id: string, n: number) => void;
+}) {
+  const cfg = PRICING.decoden.monthly;
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl bg-olive text-cream p-6">
+        <div className="text-[11px] uppercase tracking-eyebrow text-cream/65 font-semibold mb-1">
+          DecoDen
+        </div>
+        <div className="text-xl font-bold tracking-tight">{cfg.label}</div>
+        <div className="text-xs text-cream/70 mt-1">{cfg.sublabel}</div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {cfg.units.map((u) => {
+          const q = props.qty(u.id);
+          return (
+            <div key={u.id} className={`room-card ${q > 0 ? "has" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">{u.label}</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    {fmt(u.price)}
+                    <span className="text-muted">/mo</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="stepper-btn"
+                    disabled={q <= 0}
+                    onClick={() => props.setQty(u.id, q - 1)}
+                  >
+                    −
+                  </button>
+                  <div className="w-6 text-center text-sm font-bold tabular-nums">
+                    {q}
+                  </div>
+                  <button
+                    className="stepper-btn"
+                    disabled={q >= 20}
+                    onClick={() => props.setQty(u.id, q + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <details className="mt-3 group">
+                <summary className="text-[11px] uppercase tracking-eyebrow text-muted font-semibold cursor-pointer">
+                  What&apos;s included
+                </summary>
+                <ul className="mt-2 space-y-1 text-xs text-ink/85">
+                  {u.contents.map((item, i) => (
+                    <li key={i} className="flex gap-2 items-start">
+                      <span className="check-dot text-xs leading-5">✓</span>
+                      <span className="leading-5">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-xs text-muted bg-cream-soft border border-line rounded-lg p-3">
+        Multi-unit deals: stack the same package (e.g. 10 × 1BR) and the
+        builder totals it as a monthly per-unit run-rate. Useful for
+        Olymbec/Armco-style pitches.
       </div>
     </div>
   );
