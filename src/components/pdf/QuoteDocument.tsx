@@ -378,7 +378,9 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
             {state.tax.enabled ? (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsMutedLabel}>
-                  Tax ({state.tax.rate}%)
+                  {state.tax.label
+                    ? `${state.tax.label} (${state.tax.rate}%)`
+                    : `Tax (${state.tax.rate}%)`}
                 </Text>
                 <Text style={styles.totalsAmt}>{fmt(t.tax)}</Text>
               </View>

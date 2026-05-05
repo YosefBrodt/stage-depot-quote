@@ -19,6 +19,14 @@ import {
   type Tier,
 } from "@/lib/pricing";
 import { fmt } from "@/lib/format";
+import {
+  AddressAutocomplete,
+  provinceTaxRate,
+  type AddressPick,
+} from "./AddressAutocomplete";
+import { ClientAutocomplete, type ClientPick } from "./ClientAutocomplete";
+import { TemplatesMenu } from "./TemplatesMenu";
+import type { Template } from "@/lib/templates";
 
 type SavedRow = {
   id: string;
@@ -80,6 +88,7 @@ export function QuoteBuilder() {
   const [savedQuotes, setSavedQuotes] = useState<SavedRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [customLabel, setCustomLabel] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,6 +98,57 @@ export function QuoteBuilder() {
     if (local) setState(local);
     setHydrated(true);
   }, []);
+
+  // Prefetch saved quotes once so client and address autocompletes have data,
+  // and the History modal opens instantly on first click.
+  const refreshHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const res = await fetch("/api/quotes");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setSavedQuotes(data.quotes || []);
+      setHistoryLoaded(true);
+    } catch (err) {
+      setHistoryError(String(err));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  const pastClients = useMemo(() => {
+    return savedQuotes
+      .map((r) => ({
+        client: {
+          name: r.data?.client?.name || "",
+          address: r.data?.client?.address || "",
+          email: r.data?.client?.email || "",
+          phone: r.data?.client?.phone || "",
+        },
+        lastUsed: new Date(r.updated_at).getTime(),
+      }))
+      .filter((r) => r.client.name)
+      .sort((a, b) => b.lastUsed - a.lastUsed);
+  }, [savedQuotes]);
+
+  const pastAddresses = useMemo(() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const r of savedQuotes) {
+      const a = r.data?.client?.address?.trim();
+      if (!a) continue;
+      const k = a.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(a);
+    }
+    return out;
+  }, [savedQuotes]);
 
   useEffect(() => {
     if (hydrated) saveLocalDraft(state);
@@ -173,6 +233,58 @@ export function QuoteBuilder() {
     showToast("New quote started");
   }
 
+  function loadTemplate(t: Template) {
+    if (
+      state.quoteId ||
+      state.client.name ||
+      state.client.address ||
+      Object.keys(state.qty).length > 0 ||
+      state.custom.length > 0
+    ) {
+      const ok = window.confirm(
+        `Start a new quote from "${t.label}"?\nCurrent draft will be cleared.`
+      );
+      if (!ok) return;
+    }
+    setState(t.build());
+    showToast(`Loaded: ${t.label}`);
+  }
+
+  function handleAddressPick(pick: AddressPick) {
+    patch((s) => ({
+      ...s,
+      client: { ...s.client, address: pick.fullAddress },
+    }));
+    if (pick.province) {
+      const tax = provinceTaxRate(pick.province);
+      if (tax) {
+        patch((s) => ({
+          ...s,
+          tax: { enabled: true, rate: tax.rate, label: tax.label },
+        }));
+        showToast(
+          `${pick.province} detected, tax set to ${tax.rate}% ${tax.label}`
+        );
+        return;
+      }
+    }
+    showToast("Address saved");
+  }
+
+  function handleClientPick(c: ClientPick) {
+    patch((s) => ({
+      ...s,
+      client: {
+        ...s.client,
+        name: c.name,
+        address: c.address || s.client.address,
+        email: c.email || s.client.email,
+        phone: c.phone || s.client.phone,
+      },
+    }));
+    showToast(`Client filled from past quote`);
+  }
+
   async function saveQuote() {
     if (saving) return;
     setSaving(true);
@@ -187,6 +299,7 @@ export function QuoteBuilder() {
       const saved: QuoteState = data.quote;
       setState(mergeState(saved));
       showToast(`Saved as ${saved.quoteId}`);
+      refreshHistory();
     } catch (err) {
       showToast(`Save failed: ${String(err)}`);
     } finally {
@@ -353,20 +466,9 @@ export function QuoteBuilder() {
     }
   }
 
-  async function openHistory() {
+  function openHistory() {
     setHistoryOpen(true);
-    setHistoryLoading(true);
-    setHistoryError(null);
-    try {
-      const res = await fetch("/api/quotes");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSavedQuotes(data.quotes || []);
-    } catch (err) {
-      setHistoryError(String(err));
-    } finally {
-      setHistoryLoading(false);
-    }
+    if (!historyLoaded) refreshHistory();
   }
 
   function loadFromHistory(row: SavedRow) {
@@ -459,9 +561,7 @@ export function QuoteBuilder() {
             </div>
           </div>
           <div className="flex gap-1.5 flex-wrap">
-            <button className="btn btn-on-dark" onClick={newQuote}>
-              + New
-            </button>
+            <TemplatesMenu onPick={loadTemplate} />
             <button className="btn btn-on-dark" onClick={openHistory}>
               History
             </button>
@@ -511,22 +611,33 @@ export function QuoteBuilder() {
               Build a staging package, send it out.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Field
-                label="Client name"
-                placeholder="Jane Doe"
-                value={state.client.name}
-                onChange={(v) =>
-                  patch((s) => ({ ...s, client: { ...s.client, name: v } }))
-                }
-              />
-              <Field
-                label="Property address"
-                placeholder="123 Maple Ave"
-                value={state.client.address}
-                onChange={(v) =>
-                  patch((s) => ({ ...s, client: { ...s.client, address: v } }))
-                }
-              />
+              <div>
+                <div className="label-eyebrow mb-1.5">Client name</div>
+                <ClientAutocomplete
+                  value={state.client.name}
+                  onChange={(v) =>
+                    patch((s) => ({ ...s, client: { ...s.client, name: v } }))
+                  }
+                  onPick={handleClientPick}
+                  pastClients={pastClients}
+                  placeholder="Jane Doe"
+                />
+              </div>
+              <div>
+                <div className="label-eyebrow mb-1.5">Property address</div>
+                <AddressAutocomplete
+                  value={state.client.address}
+                  onChange={(v) =>
+                    patch((s) => ({
+                      ...s,
+                      client: { ...s.client, address: v },
+                    }))
+                  }
+                  onPick={handleAddressPick}
+                  pastAddresses={pastAddresses}
+                  placeholder="Start typing... (e.g. 5720)"
+                />
+              </div>
               <Field
                 label="Quote date"
                 type="date"
@@ -719,7 +830,9 @@ export function QuoteBuilder() {
                       }))
                     }
                   />
-                  <span className="text-sm text-muted">% (HST/GST)</span>
+                  <span className="text-sm text-muted">
+                    % {state.tax.label ? `(${state.tax.label})` : "(HST/GST)"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -763,6 +876,23 @@ export function QuoteBuilder() {
                 Default: 50% deposit on signing, balance due on install.
               </div>
             </div>
+          </div>
+
+          <div className="surface-card p-6">
+            <div className="flex items-baseline justify-between mb-2">
+              <div className="label-eyebrow">Internal notes</div>
+              <div className="text-[11px] text-muted">
+                Only your team sees this, never shown on the PDF
+              </div>
+            </div>
+            <textarea
+              className="field min-h-[80px] resize-y"
+              placeholder="Anything Shauly or Harry should know about this lead. Where they came from, what they're negotiating, follow-up reminders..."
+              value={state.notes || ""}
+              onChange={(e) =>
+                patch((s) => ({ ...s, notes: e.target.value }))
+              }
+            />
           </div>
 
           <div className="surface-card p-6">
@@ -873,7 +1003,9 @@ export function QuoteBuilder() {
               {state.tax.enabled ? (
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="text-muted">
-                    Tax ({state.tax.rate}%)
+                    {state.tax.label
+                      ? `${state.tax.label} (${state.tax.rate}%)`
+                      : `Tax (${state.tax.rate}%)`}
                   </span>
                   <span className="tabular-nums">{fmt(totals.tax)}</span>
                 </div>

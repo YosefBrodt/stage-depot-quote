@@ -121,7 +121,7 @@ export type Discount = {
   reason: string;
 };
 
-export type Tax = { enabled: boolean; rate: number };
+export type Tax = { enabled: boolean; rate: number; label?: string };
 
 export type Deposit = { percent: number; terms: string };
 
@@ -139,6 +139,7 @@ export type QuoteState = {
   tax: Tax;
   deposit: Deposit;
   extMonths: number;
+  notes: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -159,12 +160,13 @@ export const defaultState = (): QuoteState => ({
     installDate: "",
   },
   discount: { type: "none", value: 0, reason: "" },
-  tax: { enabled: false, rate: 13 },
+  tax: { enabled: false, rate: 13, label: "HST/GST" },
   deposit: {
     percent: 50,
     terms: "50% deposit on signing. Balance due on install day.",
   },
   extMonths: 0,
+  notes: "",
   createdAt: Date.now(),
   updatedAt: Date.now(),
 });
