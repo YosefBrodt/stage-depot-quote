@@ -5,15 +5,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1c1917",
-        paper: "#f8f5f0",
-        accent: "#8a5a2b",
-        line: "#e7e1d6",
-        muted: "#78716c",
+        // Stager Depot brand
+        olive: "#393D32",
+        "olive-soft": "#4A4F42",
+        "olive-line": "#2C302A",
+        cream: "#F1E3C8",
+        "cream-soft": "#F7EFDC",
+        // Surfaces
+        ink: "#1A1A17",
+        body: "#FAFAF8",
+        line: "#E7E3D8",
+        muted: "#6B6B66",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        serif: ["'Cormorant Garamond'", "'Iowan Old Style'", "serif"],
+      },
+      letterSpacing: {
+        eyebrow: "0.14em",
       },
     },
   },

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
 import {
   PRICING,
   buildIncluded,
@@ -100,7 +101,7 @@ export function QuoteBuilder() {
     setToastMsg(msg);
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastVisible(false), 1800);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 2200);
   }, []);
 
   function patch(updater: (s: QuoteState) => QuoteState) {
@@ -243,7 +244,6 @@ export function QuoteBuilder() {
     if (emailBusy) return;
     setEmailBusy(true);
     try {
-      // Generate + download PDF first so the user can attach it
       const blob = await fetchPdfBlob();
       downloadBlob(blob, pdfFilename());
 
@@ -306,7 +306,7 @@ export function QuoteBuilder() {
       : "";
     const out: string[] = [];
     out.push(
-      `STAGER DEPOT — STAGING QUOTE${state.quoteId ? "  " + state.quoteId : ""}`
+      `STAGER DEPOT, STAGING QUOTE${state.quoteId ? "  " + state.quoteId : ""}`
     );
     out.push("");
     if (c.name) out.push(`Client: ${c.name}`);
@@ -408,7 +408,6 @@ export function QuoteBuilder() {
     window.location.href = "/login";
   }
 
-  // Header date label for the right-rail quote preview
   const quoteDateLabel = state.client.date
     ? new Date(state.client.date + "T00:00").toLocaleDateString("en-US", {
         month: "short",
@@ -417,7 +416,6 @@ export function QuoteBuilder() {
       })
     : "";
 
-  // Tier pills
   const tiers: [Tier, string][] =
     state.mode === "full"
       ? [["basic", "Basic"], ["signature", "Signature (+25%)"]]
@@ -428,53 +426,74 @@ export function QuoteBuilder() {
       ? PRICING.full[state.tier === "signature" ? "signature" : "basic"]
       : PRICING.single[state.tier === "signature" ? "signature" : "standard"];
 
-  // Right rail status
   const headerLine = [state.client.name, state.client.address]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <>
-      <header className="border-b border-[color:var(--line)] bg-white sticky top-0 z-40">
+      <header className="bg-olive text-cream sticky top-0 z-40 shadow-[0_1px_0_0_rgba(0,0,0,0.15)]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[color:var(--accent)] text-white rounded-md flex items-center justify-center font-serif-display text-xl font-semibold">
-              S
-            </div>
-            <div>
-              <div className="font-serif-display text-2xl leading-none font-semibold">
-                Stager Depot
+          <div className="flex items-center gap-4">
+            <Image
+              src="/sd-logo-filled.svg"
+              alt="Stager Depot"
+              width={56}
+              height={35}
+              priority
+              className="h-9 w-auto"
+            />
+            <div className="hidden sm:block h-7 w-px bg-cream/20" />
+            <div className="hidden sm:block">
+              <div className="text-[11px] uppercase tracking-eyebrow text-cream/60 font-semibold leading-none">
+                Quote Builder
               </div>
-              <div className="text-xs text-stone-500 mt-0.5 flex items-center gap-2">
-                <span>{state.quoteId || "New quote"}</span>
-                <span
-                  className={`badge ${state.quoteId ? "saved" : "draft"}`}
-                >
+              <div className="text-sm text-cream mt-1.5 flex items-center gap-2 leading-none">
+                <span className="font-medium">
+                  {state.quoteId || "New quote"}
+                </span>
+                <span className={`badge ${state.quoteId ? "saved" : "draft"}`}>
                   {state.quoteId ? "Saved" : "Draft"}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button className="btn btn-ghost" onClick={newQuote}>
+          <div className="flex gap-1.5 flex-wrap">
+            <button className="btn btn-on-dark" onClick={newQuote}>
               + New
             </button>
-            <button className="btn" onClick={openHistory}>
+            <button className="btn btn-on-dark" onClick={openHistory}>
               History
             </button>
-            <button className="btn" onClick={saveQuote} disabled={saving}>
+            <button
+              className="btn btn-on-dark"
+              onClick={saveQuote}
+              disabled={saving}
+            >
               {saving ? "Saving..." : "Save"}
             </button>
-            <button className="btn" onClick={downloadPDF} disabled={pdfBusy}>
+            <button
+              className="btn btn-on-dark"
+              onClick={downloadPDF}
+              disabled={pdfBusy}
+            >
               {pdfBusy ? "Generating..." : "PDF"}
             </button>
-            <button className="btn" onClick={emailQuote} disabled={emailBusy}>
+            <button
+              className="btn btn-on-dark"
+              onClick={emailQuote}
+              disabled={emailBusy}
+            >
               {emailBusy ? "Preparing..." : "Email"}
             </button>
-            <button className="btn btn-primary" onClick={copyQuote}>
+            <button className="btn btn-on-dark-primary" onClick={copyQuote}>
               Copy
             </button>
-            <button className="btn btn-ghost" onClick={logout} title="Sign out">
+            <button
+              className="btn btn-on-dark"
+              onClick={logout}
+              title="Sign out"
+            >
               ⎋
             </button>
           </div>
@@ -484,10 +503,11 @@ export function QuoteBuilder() {
       <main className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-10">
         <section className="space-y-8">
           <div>
-            <h2 className="font-serif-display text-3xl font-semibold mb-1">
+            <div className="label-eyebrow mb-2">Client details</div>
+            <h2 className="h-display text-3xl mb-1">
               {state.quoteId ? `Quote ${state.quoteId}` : "New Quote"}
             </h2>
-            <p className="text-stone-500 text-sm mb-5">
+            <p className="text-muted text-sm mb-6">
               Build a staging package, send it out.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -546,8 +566,8 @@ export function QuoteBuilder() {
             </div>
           </div>
 
-          <div className="bg-white border border-[color:var(--line)] rounded-xl overflow-hidden">
-            <div className="flex border-b border-[color:var(--line)]">
+          <div className="surface-card overflow-hidden">
+            <div className="flex border-b border-line">
               <div
                 className={`toggle-tab ${state.mode === "full" ? "active" : ""}`}
                 onClick={() => setMode("full")}
@@ -606,10 +626,8 @@ export function QuoteBuilder() {
             </div>
           </div>
 
-          <div className="bg-white border border-[color:var(--line)] rounded-xl p-6 space-y-5">
-            <div className="font-serif-display text-xl font-semibold">
-              Pricing & terms
-            </div>
+          <div className="surface-card p-6 space-y-6">
+            <div className="h-section text-xl">Pricing & terms</div>
 
             <div>
               <div className="label-eyebrow mb-2">Discount</div>
@@ -671,6 +689,7 @@ export function QuoteBuilder() {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
+                    className="accent-olive"
                     checked={state.tax.enabled}
                     onChange={(e) =>
                       patch((s) => ({
@@ -700,7 +719,7 @@ export function QuoteBuilder() {
                       }))
                     }
                   />
-                  <span className="text-sm text-stone-500">% (HST/GST)</span>
+                  <span className="text-sm text-muted">% (HST/GST)</span>
                 </div>
               </div>
             </div>
@@ -726,7 +745,7 @@ export function QuoteBuilder() {
                       }))
                     }
                   />
-                  <span className="text-sm text-stone-500">%</span>
+                  <span className="text-sm text-muted">%</span>
                 </div>
                 <input
                   className="field"
@@ -746,14 +765,12 @@ export function QuoteBuilder() {
             </div>
           </div>
 
-          <div className="bg-white border border-[color:var(--line)] rounded-xl p-6">
+          <div className="surface-card p-6">
             <details>
               <summary>
-                <span className="font-serif-display text-xl font-semibold">
-                  Extension calculator
-                </span>
+                <span className="h-section text-lg">Extension calculator</span>
               </summary>
-              <div className="mt-4 space-y-3">
+              <div className="mt-5 space-y-3">
                 <p className="hint">
                   Initial contract runs 8 weeks. After that, the first month
                   extension is 60% off the original. Each subsequent month is
@@ -787,16 +804,19 @@ export function QuoteBuilder() {
         </section>
 
         <aside className="lg:sticky lg:top-24 self-start">
-          <div className="bg-white border border-[color:var(--line)] rounded-xl shadow-sm">
-            <div className="px-6 py-5 border-b border-[color:var(--line)]">
+          <div className="surface-card overflow-hidden shadow-sm">
+            <div className="bg-olive text-cream px-6 py-5">
               <div className="flex items-baseline justify-between">
-                <div className="font-serif-display text-2xl font-semibold">
-                  Quote
+                <div className="text-[11px] uppercase tracking-eyebrow text-cream/65 font-semibold">
+                  Live preview
                 </div>
-                <div className="text-xs text-stone-500">{quoteDateLabel}</div>
+                <div className="text-xs text-cream/65">{quoteDateLabel}</div>
               </div>
-              <div className="text-sm text-stone-600 mt-1">
-                {headerLine || "Stager Depot, Home Staging"}
+              <div className="text-2xl font-bold mt-2 tracking-tight">
+                Quote
+              </div>
+              <div className="text-sm text-cream/80 mt-0.5">
+                {headerLine || "Stager Depot"}
               </div>
             </div>
 
@@ -809,12 +829,14 @@ export function QuoteBuilder() {
                 totals.lines.map((l, i) => (
                   <div className="quote-line" key={i}>
                     <div className="desc">
-                      {l.desc}
-                      {l.custom ? (
-                        <span className="text-xs text-stone-400">
-                          {" "}(custom)
-                        </span>
-                      ) : null}
+                      <div className="font-medium">
+                        {l.desc}
+                        {l.custom ? (
+                          <span className="text-xs text-muted">
+                            {" "}(custom)
+                          </span>
+                        ) : null}
+                      </div>
                       {l.qty > 1 ? (
                         <div className="qty-sub">
                           {l.qty} × {fmt(l.unit)}
@@ -827,14 +849,14 @@ export function QuoteBuilder() {
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-[color:var(--line)] bg-stone-50/60 space-y-1.5">
+            <div className="px-6 py-4 border-t border-line bg-[#FBFAF6] space-y-1.5">
               <div className="flex items-baseline justify-between text-sm">
-                <span className="text-stone-600">Subtotal</span>
+                <span className="text-muted">Subtotal</span>
                 <span className="tabular-nums">{fmt(totals.subtotal)}</span>
               </div>
               {totals.discount > 0 ? (
                 <div className="flex items-baseline justify-between text-sm">
-                  <span className="text-stone-600">
+                  <span className="text-muted">
                     Discount
                     {state.discount.type === "percent"
                       ? ` ${state.discount.value}%`
@@ -843,44 +865,48 @@ export function QuoteBuilder() {
                       ? ` (${state.discount.reason})`
                       : ""}
                   </span>
-                  <span className="tabular-nums text-[color:var(--accent)]">
+                  <span className="tabular-nums text-olive font-medium">
                     −{fmt(totals.discount)}
                   </span>
                 </div>
               ) : null}
               {state.tax.enabled ? (
                 <div className="flex items-baseline justify-between text-sm">
-                  <span className="text-stone-600">
+                  <span className="text-muted">
                     Tax ({state.tax.rate}%)
                   </span>
                   <span className="tabular-nums">{fmt(totals.tax)}</span>
                 </div>
               ) : null}
-              <div className="flex items-baseline justify-between pt-2 border-t border-[color:var(--line)]">
+              <div className="flex items-baseline justify-between pt-3 border-t border-line mt-2">
                 <div className="label-eyebrow">Total</div>
-                <div className="total-row font-serif-display text-[color:var(--accent)]">
+                <div className="total-row text-olive">
                   {fmt(totals.total)}
                 </div>
               </div>
               {state.deposit.percent > 0 && totals.total > 0 ? (
-                <div className="text-xs text-stone-600 pt-1.5 space-y-0.5">
+                <div className="text-xs text-muted pt-2 space-y-1">
                   <div className="flex justify-between">
                     <span>Deposit due on signing</span>
-                    <span className="tabular-nums">{fmt(totals.deposit)}</span>
+                    <span className="tabular-nums font-medium text-ink">
+                      {fmt(totals.deposit)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Balance due on install</span>
-                    <span className="tabular-nums">{fmt(totals.balance)}</span>
+                    <span className="tabular-nums font-medium text-ink">
+                      {fmt(totals.balance)}
+                    </span>
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="px-6 py-5 border-t border-[color:var(--line)]">
-              <div className="label-eyebrow mb-2">What&apos;s included</div>
-              <ul className="text-sm space-y-1.5">
+            <div className="px-6 py-5 border-t border-line">
+              <div className="label-eyebrow mb-2.5">What&apos;s included</div>
+              <ul className="text-sm space-y-2">
                 {included.length === 0 ? (
-                  <li className="text-stone-400 italic text-xs">
+                  <li className="text-muted italic text-xs">
                     No rooms selected yet
                   </li>
                 ) : (
@@ -894,7 +920,7 @@ export function QuoteBuilder() {
               </ul>
             </div>
 
-            <div className="px-6 py-4 border-t border-[color:var(--line)]">
+            <div className="px-6 py-4 border-t border-line">
               <div className="label-eyebrow mb-1.5">Extensions</div>
               <p className="hint">
                 After 8 weeks, the first additional month is 60% of original
@@ -913,12 +939,17 @@ export function QuoteBuilder() {
           }}
         >
           <div className="modal">
-            <div className="px-6 py-4 border-b border-[color:var(--line)] flex items-center justify-between">
-              <div className="font-serif-display text-2xl font-semibold">
-                Quote History
+            <div className="bg-olive text-cream px-6 py-4 flex items-center justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-eyebrow text-cream/65 font-semibold">
+                  Saved quotes
+                </div>
+                <div className="text-xl font-bold mt-0.5 tracking-tight">
+                  Quote History
+                </div>
               </div>
               <button
-                className="btn btn-ghost"
+                className="btn btn-on-dark"
                 onClick={() => setHistoryOpen(false)}
               >
                 Close
@@ -926,15 +957,13 @@ export function QuoteBuilder() {
             </div>
             <div className="overflow-auto">
               {historyLoading ? (
-                <div className="p-12 text-center text-stone-400">
-                  Loading...
-                </div>
+                <div className="p-12 text-center text-muted">Loading...</div>
               ) : historyError ? (
                 <div className="p-8 text-sm text-red-700 bg-red-50">
                   {historyError}
                 </div>
               ) : savedQuotes.length === 0 ? (
-                <div className="p-12 text-center text-stone-400">
+                <div className="p-12 text-center text-muted">
                   No saved quotes yet.
                 </div>
               ) : (
@@ -947,22 +976,20 @@ export function QuoteBuilder() {
                   return (
                     <div
                       key={row.id}
-                      className="px-6 py-4 border-b border-[color:var(--line)] hover:bg-stone-50 flex items-center gap-4"
+                      className="px-6 py-4 border-b border-line hover:bg-[#FBFAF6] flex items-center gap-4"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">
+                          <span className="font-semibold text-sm text-ink">
                             {row.client_name || "Untitled client"}
                           </span>
-                          <span className="text-xs text-stone-400">
-                            {row.id}
-                          </span>
+                          <span className="text-xs text-muted">{row.id}</span>
                         </div>
-                        <div className="text-xs text-stone-500 mt-0.5">
+                        <div className="text-xs text-muted mt-0.5">
                           {row.client_address || "—"} · updated {date}
                         </div>
                       </div>
-                      <div className="font-serif-display text-lg font-semibold text-[color:var(--accent)] tabular-nums">
+                      <div className="text-lg font-bold text-olive tabular-nums">
                         {fmt(total)}
                       </div>
                       <div className="flex gap-1">
@@ -984,7 +1011,7 @@ export function QuoteBuilder() {
                           onClick={() => deleteFromHistory(row)}
                           title="Delete"
                         >
-                          🗑
+                          ✕
                         </button>
                       </div>
                     </div>
@@ -1030,22 +1057,23 @@ function FullModeBody(props: {
   const cfg = PRICING.full[props.tier];
   return (
     <div className="space-y-6">
-      <div className="border border-[color:var(--line)] rounded-xl bg-stone-50 p-5">
+      <div className="rounded-xl bg-olive text-cream p-6">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <div>
-            <div className="font-serif-display text-xl font-semibold">
-              {cfg.label}
+            <div className="text-[11px] uppercase tracking-eyebrow text-cream/65 font-semibold mb-1">
+              {props.tier === "signature" ? "Signature" : "Basic"} Tier
             </div>
-            <div className="text-xs text-stone-500">{cfg.sublabel}</div>
+            <div className="text-xl font-bold tracking-tight">{cfg.label}</div>
+            <div className="text-xs text-cream/70 mt-1">{cfg.sublabel}</div>
           </div>
-          <div className="font-serif-display text-2xl font-semibold text-[color:var(--accent)]">
+          <div className="text-3xl font-bold tracking-tight tabular-nums">
             {fmt(cfg.base)}
           </div>
         </div>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-4">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-5 pt-5 border-t border-cream/15">
           {cfg.includes.map((item, i) => (
-            <li key={i} className="flex gap-2 text-sm">
-              <span className="check-dot">✓</span>
+            <li key={i} className="flex gap-2 text-sm text-cream/90">
+              <span className="text-cream">✓</span>
               <span>{item}</span>
             </li>
           ))}
@@ -1053,10 +1081,8 @@ function FullModeBody(props: {
       </div>
       <div>
         <div className="flex items-baseline justify-between mb-3">
-          <div className="font-serif-display text-lg font-semibold">
-            Add-ons
-          </div>
-          <div className="hint">All prices are per item</div>
+          <div className="h-section text-base">Add-ons</div>
+          <div className="hint">All prices per item</div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {cfg.addons.map((a) => {
@@ -1069,8 +1095,8 @@ function FullModeBody(props: {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-medium text-sm">{a.label}</div>
-                    <div className="text-xs text-stone-500 mt-0.5">
+                    <div className="font-semibold text-sm">{a.label}</div>
+                    <div className="text-xs text-muted mt-0.5">
                       {fmt(a.price)} {a.multi ? "each" : ""}
                     </div>
                   </div>
@@ -1082,7 +1108,7 @@ function FullModeBody(props: {
                     >
                       −
                     </button>
-                    <div className="w-6 text-center text-sm font-semibold tabular-nums">
+                    <div className="w-6 text-center text-sm font-bold tabular-nums">
                       {q}
                     </div>
                     <button
@@ -1111,25 +1137,23 @@ function SingleModeBody(props: {
   const cfg = PRICING.single[props.tier];
   return (
     <div className="space-y-6">
-      <div className="border border-[color:var(--line)] rounded-xl bg-stone-50 p-5">
-        <div className="font-serif-display text-xl font-semibold">
-          {cfg.label}
+      <div className="rounded-xl bg-olive text-cream p-6">
+        <div className="text-[11px] uppercase tracking-eyebrow text-cream/65 font-semibold mb-1">
+          {props.tier === "signature" ? "Signature" : "Standard"} Tier
         </div>
-        <div className="text-xs text-stone-500">{cfg.sublabel}</div>
+        <div className="text-xl font-bold tracking-tight">{cfg.label}</div>
+        <div className="text-xs text-cream/70 mt-1">{cfg.sublabel}</div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {cfg.rooms.map((r) => {
           const q = props.qty(r.id);
           const max = r.max || 6;
           return (
-            <div
-              key={r.id}
-              className={`room-card ${q > 0 ? "has" : ""}`}
-            >
+            <div key={r.id} className={`room-card ${q > 0 ? "has" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="font-medium text-sm">{r.label}</div>
-                  <div className="text-xs text-stone-500 mt-0.5">
+                  <div className="font-semibold text-sm">{r.label}</div>
+                  <div className="text-xs text-muted mt-0.5">
                     {fmt(r.price)} each, delivery included
                   </div>
                 </div>
@@ -1141,7 +1165,7 @@ function SingleModeBody(props: {
                   >
                     −
                   </button>
-                  <div className="w-6 text-center text-sm font-semibold tabular-nums">
+                  <div className="w-6 text-center text-sm font-bold tabular-nums">
                     {q}
                   </div>
                   <button
@@ -1173,9 +1197,7 @@ function CustomBlock(props: {
   return (
     <details className="mt-6">
       <summary>
-        <span className="font-serif-display text-lg font-semibold">
-          Custom line item
-        </span>
+        <span className="h-section text-base">Custom line item</span>
       </summary>
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2">
         <input
@@ -1196,19 +1218,19 @@ function CustomBlock(props: {
         </button>
       </div>
       {props.items.length > 0 ? (
-        <div className="mt-3 border border-[color:var(--line)] rounded-md px-3">
+        <div className="mt-3 border border-line rounded-md px-3">
           {props.items.map((c, i) => (
             <div
               key={i}
-              className="flex items-center justify-between gap-3 py-2 border-b border-[color:var(--line)] last:border-0"
+              className="flex items-center justify-between gap-3 py-2 border-b border-line last:border-0"
             >
               <div className="text-sm">{c.label}</div>
               <div className="flex items-center gap-3">
-                <div className="text-sm font-medium tabular-nums">
+                <div className="text-sm font-semibold tabular-nums">
                   {fmt(c.price)}
                 </div>
                 <button
-                  className="text-stone-400 hover:text-stone-700 text-lg leading-none"
+                  className="text-muted hover:text-ink text-lg leading-none"
                   onClick={() => props.onRemove(i)}
                   title="Remove"
                 >
@@ -1232,30 +1254,28 @@ function ExtensionPreview(props: { months: number; total: number }) {
   const ext = (months >= 1 ? m1 : 0) + more;
   const grand = total + ext;
   return (
-    <div className="border border-[color:var(--line)] rounded-md bg-stone-50 p-4 mt-2 space-y-1.5 text-sm">
+    <div className="border border-line rounded-lg bg-cream-soft p-4 mt-2 space-y-1.5 text-sm">
       <div className="flex justify-between">
         <span>Original contract (8 weeks)</span>
-        <span className="tabular-nums">{fmt(total)}</span>
+        <span className="tabular-nums font-medium">{fmt(total)}</span>
       </div>
       {months >= 1 ? (
-        <div className="flex justify-between text-stone-600">
+        <div className="flex justify-between text-muted">
           <span>+ Month 1 extension (60% off)</span>
           <span className="tabular-nums">{fmt(m1)}</span>
         </div>
       ) : null}
       {months >= 2 ? (
-        <div className="flex justify-between text-stone-600">
+        <div className="flex justify-between text-muted">
           <span>
             + Months 2–{months} (65% off, {months - 1} mo)
           </span>
           <span className="tabular-nums">{fmt(more)}</span>
         </div>
       ) : null}
-      <div className="flex justify-between font-semibold pt-2 border-t border-[color:var(--line)]">
+      <div className="flex justify-between font-bold pt-2 border-t border-olive/20">
         <span>Total with extensions</span>
-        <span className="tabular-nums text-[color:var(--accent)]">
-          {fmt(grand)}
-        </span>
+        <span className="tabular-nums text-olive">{fmt(grand)}</span>
       </div>
     </div>
   );

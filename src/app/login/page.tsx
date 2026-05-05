@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function LoginForm() {
@@ -36,47 +37,93 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-white border border-line rounded-xl shadow-sm p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-md bg-[color:var(--accent)] text-white flex items-center justify-center font-serif-display text-2xl font-semibold">
-            S
+    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      <div className="hidden lg:flex bg-olive text-cream items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none"
+             style={{
+               backgroundImage:
+                 "radial-gradient(circle at 25% 30%, #F1E3C8 1px, transparent 1px), radial-gradient(circle at 75% 70%, #F1E3C8 1px, transparent 1px)",
+               backgroundSize: "60px 60px, 80px 80px",
+             }}
+        />
+        <div className="relative z-10 max-w-sm">
+          <Image
+            src="/sd-logo-filled.svg"
+            alt="Stager Depot"
+            width={120}
+            height={75}
+            priority
+            className="h-12 w-auto mb-10"
+          />
+          <div className="text-[11px] uppercase tracking-eyebrow text-cream/60 font-semibold mb-4">
+            Internal Tool
           </div>
-          <div>
-            <div className="font-serif-display text-2xl font-semibold leading-none">
-              Stager Depot
-            </div>
-            <div className="text-xs text-stone-500 mt-0.5">Quote builder</div>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight mb-4">
+            Quote Builder
+          </h1>
+          <p className="text-cream/75 text-[15px] leading-relaxed">
+            Build staging packages, send branded quotes, and track every deal
+            in one shared workspace.
+          </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <div className="label-eyebrow mb-1.5">Password</div>
-            <input
-              autoFocus
-              type="password"
-              className="field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Shared team password"
+      </div>
+
+      <div className="flex items-center justify-center p-6 lg:p-12 bg-body">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <Image
+              src="/sd-logo-filled.svg"
+              alt="Stager Depot"
+              width={48}
+              height={30}
+              className="h-9 w-auto"
             />
-          </div>
-          {error && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {error}
+            <div className="h-7 w-px bg-line" />
+            <div>
+              <div className="text-[11px] uppercase tracking-eyebrow text-muted font-semibold leading-none">
+                Internal
+              </div>
+              <div className="text-sm font-semibold mt-1.5 leading-none">
+                Quote Builder
+              </div>
             </div>
-          )}
-          <button
-            type="submit"
-            disabled={busy || !password}
-            className="btn btn-primary w-full justify-center"
-          >
-            {busy ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-        <p className="hint mt-6">
-          Internal tool. If you do not have the password, ask Yosef.
-        </p>
+          </div>
+
+          <div className="label-eyebrow mb-2">Sign in</div>
+          <h2 className="h-display text-2xl mb-1">Welcome back</h2>
+          <p className="text-muted text-sm mb-6">
+            Enter the team password to access the builder.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <div className="label-eyebrow mb-1.5">Password</div>
+              <input
+                autoFocus
+                type="password"
+                className="field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Shared team password"
+              />
+            </div>
+            {error ? (
+              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                {error}
+              </div>
+            ) : null}
+            <button
+              type="submit"
+              disabled={busy || !password}
+              className="btn btn-primary w-full justify-center py-2.5"
+            >
+              {busy ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+          <p className="hint mt-6">
+            Don&apos;t have the password? Ask Yosef.
+          </p>
+        </div>
       </div>
     </main>
   );
