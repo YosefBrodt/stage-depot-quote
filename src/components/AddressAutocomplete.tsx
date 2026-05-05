@@ -15,11 +15,21 @@ export type AddressPick = {
   postalCode?: string;
 };
 
-type MapboxFeature = {
-  place_name: string;
-  text: string;
-  address?: string;
-  context?: Array<{ id: string; text: string; short_code?: string }>;
+type GeoapifyFeature = {
+  properties: {
+    formatted?: string;
+    address_line1?: string;
+    address_line2?: string;
+    housenumber?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    state_code?: string;
+    postcode?: string;
+    country?: string;
+    country_code?: string;
+    place_id?: string;
+  };
 };
 
 type Suggestion = {
@@ -29,52 +39,50 @@ type Suggestion = {
   pick: AddressPick;
 };
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_KEY;
 
-function parseFeature(f: MapboxFeature): Suggestion {
-  const provinceCtx = f.context?.find((c) => c.id.startsWith("region"));
-  const cityCtx = f.context?.find((c) => c.id.startsWith("place"));
-  const postalCtx = f.context?.find((c) => c.id.startsWith("postcode"));
-  const provinceShort = provinceCtx?.short_code?.replace("CA-", "");
-  const houseNumber = f.address ? `${f.address} ` : "";
-  const primary = `${houseNumber}${f.text}`.trim();
-  const secondaryParts = [
-    cityCtx?.text,
-    provinceCtx?.text,
-    postalCtx?.text,
-  ].filter(Boolean) as string[];
+function parseFeature(f: GeoapifyFeature, idx: number): Suggestion {
+  const p = f.properties || {};
+  const province = (p.state_code || "").toUpperCase();
+  const primary =
+    p.address_line1 ||
+    [p.housenumber, p.street].filter(Boolean).join(" ") ||
+    p.formatted ||
+    "Unknown";
+  const secondary =
+    p.address_line2 ||
+    [p.city, p.state, p.postcode].filter(Boolean).join(", ");
+  const fullAddress = (p.formatted || `${primary}${secondary ? ", " + secondary : ""}`)
+    .replace(/, Canada$/, "")
+    .trim();
   return {
-    key: f.place_name,
+    key: p.place_id || `${idx}-${fullAddress}`,
     primary,
-    secondary: secondaryParts.join(", "),
+    secondary,
     pick: {
-      fullAddress: f.place_name.replace(/, Canada$/, ""),
-      province: provinceShort,
-      city: cityCtx?.text,
-      postalCode: postalCtx?.text,
+      fullAddress,
+      province: province || undefined,
+      city: p.city,
+      postalCode: p.postcode,
     },
   };
 }
 
-async function searchMapbox(
+async function searchGeoapify(
   query: string,
   signal: AbortSignal
 ): Promise<Suggestion[]> {
-  if (!MAPBOX_TOKEN) return [];
-  const url = new URL(
-    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-      query
-    )}.json`
-  );
-  url.searchParams.set("access_token", MAPBOX_TOKEN);
-  url.searchParams.set("country", "ca");
-  url.searchParams.set("autocomplete", "true");
-  url.searchParams.set("types", "address");
+  if (!GEOAPIFY_KEY) return [];
+  const url = new URL("https://api.geoapify.com/v1/geocode/autocomplete");
+  url.searchParams.set("text", query);
+  url.searchParams.set("filter", "countrycode:ca");
   url.searchParams.set("limit", "5");
+  url.searchParams.set("format", "geojson");
+  url.searchParams.set("apiKey", GEOAPIFY_KEY);
   const res = await fetch(url.toString(), { signal });
   if (!res.ok) return [];
-  const data: { features: MapboxFeature[] } = await res.json();
-  return data.features.map(parseFeature);
+  const data: { features: GeoapifyFeature[] } = await res.json();
+  return (data.features || []).map((f, i) => parseFeature(f, i));
 }
 
 function fallbackSearch(
@@ -132,8 +140,8 @@ export function AddressAutocomplete(props: {
       abortRef.current = ctrl;
       setLoading(true);
       try {
-        if (MAPBOX_TOKEN) {
-          const results = await searchMapbox(q, ctrl.signal);
+        if (GEOAPIFY_KEY) {
+          const results = await searchGeoapify(q, ctrl.signal);
           if (!ctrl.signal.aborted) setSuggestions(results);
         } else {
           setSuggestions(fallbackSearch(q, past));
@@ -241,9 +249,9 @@ export function AddressAutocomplete(props: {
               ) : null}
             </button>
           ))}
-          {!MAPBOX_TOKEN && suggestions.length === 0 && !loading ? (
+          {!GEOAPIFY_KEY && suggestions.length === 0 && !loading ? (
             <div className="px-3 py-2 text-xs text-muted italic">
-              No matches in past quotes. Set NEXT_PUBLIC_MAPBOX_TOKEN for full
+              No matches in past quotes. Set NEXT_PUBLIC_GEOAPIFY_KEY for full
               address search.
             </div>
           ) : null}
@@ -253,7 +261,7 @@ export function AddressAutocomplete(props: {
   );
 }
 
-export const HAS_MAPBOX = !!MAPBOX_TOKEN;
+export const HAS_GEOAPIFY = !!GEOAPIFY_KEY;
 
 export function provinceTaxRate(
   province: string | undefined
