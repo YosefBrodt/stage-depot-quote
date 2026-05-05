@@ -5,8 +5,14 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { calcTotals, buildIncluded, type QuoteState } from "@/lib/pricing";
+import {
+  calcTotals,
+  buildIncluded,
+  PRICING,
+  type QuoteState,
+} from "@/lib/pricing";
 import { fmt } from "@/lib/format";
+import { SDLogo } from "./SDLogo";
 
 const COLORS = {
   olive: "#393D32",
@@ -26,18 +32,18 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     backgroundColor: "white",
   },
-  // Header band: full-width olive banner
   headerBand: {
     backgroundColor: COLORS.olive,
-    color: COLORS.cream,
-    paddingTop: 32,
-    paddingBottom: 28,
-    paddingHorizontal: 48,
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: 44,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
   },
-  brandLeft: {},
+  headerLeft: {
+    flexDirection: "column",
+  },
   brandKicker: {
     fontSize: 8,
     color: "rgba(241,227,200,0.65)",
@@ -45,17 +51,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
     marginBottom: 8,
     fontFamily: "Helvetica-Bold",
-  },
-  brandWordmark: {
-    fontSize: 26,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.cream,
-    letterSpacing: -0.4,
-  },
-  brandSub: {
-    fontSize: 9,
-    color: "rgba(241,227,200,0.7)",
-    marginTop: 5,
   },
   metaRight: {
     textAlign: "right",
@@ -66,30 +61,29 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 1.6,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 5,
+    marginBottom: 6,
   },
   metaId: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.cream,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   metaDate: {
     color: "rgba(241,227,200,0.7)",
-    marginTop: 5,
+    marginTop: 6,
     fontSize: 9,
   },
-  // Body container
   body: {
-    paddingTop: 32,
-    paddingHorizontal: 48,
-    paddingBottom: 48,
+    paddingTop: 26,
+    paddingHorizontal: 44,
+    paddingBottom: 0,
   },
   twoCol: {
     flexDirection: "row",
-    gap: 32,
-    marginBottom: 28,
-    paddingBottom: 24,
+    gap: 28,
+    marginBottom: 22,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.line,
     borderBottomStyle: "solid",
@@ -100,7 +94,7 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     textTransform: "uppercase",
     letterSpacing: 1.6,
-    marginBottom: 6,
+    marginBottom: 7,
     fontFamily: "Helvetica-Bold",
   },
   preparedName: {
@@ -154,7 +148,15 @@ const styles = StyleSheet.create({
     borderBottomStyle: "solid",
   },
   rowDesc: { flex: 1 },
-  rowDescText: { fontSize: 11, color: COLORS.ink },
+  rowDescText: {
+    fontSize: 11,
+    color: COLORS.ink,
+    fontFamily: "Helvetica-Bold",
+  },
+  rowDescPlain: {
+    fontSize: 11,
+    color: COLORS.ink,
+  },
   rowDescQty: { fontSize: 9, color: COLORS.muted, marginTop: 3 },
   rowAmt: {
     width: 80,
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
   totalsBlock: { marginTop: 14 },
   totalsRow: {
     flexDirection: "row",
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   totalsLabel: { flex: 1, fontSize: 10, color: COLORS.ink },
   totalsAmt: {
@@ -176,12 +178,11 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
   },
   totalsMutedLabel: { flex: 1, fontSize: 10, color: COLORS.muted },
-  // Grand total card: olive band
   grandCard: {
     marginTop: 16,
     backgroundColor: COLORS.olive,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 22,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 4,
@@ -194,19 +195,19 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
   grandLabel: {
-    fontSize: 16,
+    fontSize: 17,
     color: COLORS.cream,
     fontFamily: "Helvetica-Bold",
-    marginTop: 3,
+    marginTop: 4,
     letterSpacing: -0.2,
   },
   grandAmt: {
     flex: 1,
     textAlign: "right",
     fontFamily: "Helvetica-Bold",
-    fontSize: 24,
+    fontSize: 26,
     color: COLORS.cream,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   depositCard: {
     marginTop: 14,
@@ -227,48 +228,49 @@ const styles = StyleSheet.create({
   },
   depositAmt: { fontFamily: "Helvetica-Bold", color: COLORS.olive },
   section: {
-    marginTop: 24,
-    paddingTop: 18,
+    marginTop: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.line,
     borderTopStyle: "solid",
   },
-  includedGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  includedItem: {
-    width: "50%",
+  includedInline: {
     fontSize: 10,
-    paddingVertical: 3,
-    paddingRight: 8,
     color: COLORS.ink,
-  },
-  termsText: {
-    fontSize: 10,
-    color: "#57534e",
     lineHeight: 1.55,
   },
-  // Footer band: thin olive line
+  termsText: {
+    fontSize: 9.5,
+    color: "#57534e",
+    lineHeight: 1.45,
+  },
   footerBand: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.olive,
     paddingVertical: 14,
-    paddingHorizontal: 48,
+    paddingHorizontal: 44,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 32,
   },
   footerLeft: {
     fontSize: 9,
-    color: "rgba(241,227,200,0.7)",
+    color: "rgba(241,227,200,0.85)",
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
     letterSpacing: 1.6,
   },
+  footerCenter: {
+    fontSize: 9,
+    color: "rgba(241,227,200,0.7)",
+  },
   footerRight: {
     fontSize: 9,
     color: "rgba(241,227,200,0.7)",
+    textAlign: "right",
   },
 });
 
@@ -283,21 +285,39 @@ function formatLongDate(iso: string): string {
   });
 }
 
+function packageSubLine(state: QuoteState): string | null {
+  if (state.mode === "full") {
+    const tier = state.tier === "signature" ? "signature" : "basic";
+    const cfg = PRICING.full[tier];
+    return `${cfg.sublabel} · 8-week initial contract`;
+  }
+  return null;
+}
+
 export function QuoteDocument({ state }: { state: QuoteState }) {
   const t = calcTotals(state);
   const inc = buildIncluded(state);
   const c = state.client;
   const dateStr = formatLongDate(c.date);
   const installStr = formatLongDate(c.installDate);
+  const subLine = packageSubLine(state);
+
+  // Smarter "Prepared for" eyebrow + content:
+  // - Has name: classic "Prepared for" with full client block
+  // - No name but has address: "Property" eyebrow with just address
+  // - Neither: omit the section entirely
+  const hasName = !!c.name;
+  const hasAddress = !!c.address;
+  const showPrepared = hasName || hasAddress;
+  const preparedEyebrow = hasName ? "Prepared for" : "Property";
 
   return (
     <Document title={`Stager Depot Quote ${state.quoteId || ""}`.trim()}>
       <Page size="LETTER" style={styles.page} wrap>
-        <View style={styles.headerBand} fixed>
-          <View style={styles.brandLeft}>
-            <Text style={styles.brandKicker}>Home Staging</Text>
-            <Text style={styles.brandWordmark}>Stager Depot</Text>
-            <Text style={styles.brandSub}>Quote</Text>
+        <View style={styles.headerBand}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.brandKicker}>Home Staging Quote</Text>
+            <SDLogo width={130} />
           </View>
           <View style={styles.metaRight}>
             <Text style={styles.metaIdLabel}>Quote No.</Text>
@@ -307,22 +327,38 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
         </View>
 
         <View style={styles.body}>
-          <View style={styles.twoCol}>
-            <View style={styles.col}>
-              <Text style={styles.eyebrow}>Prepared for</Text>
-              <Text style={styles.preparedName}>{c.name || "—"}</Text>
-              {c.address ? <Text style={styles.preparedSub}>{c.address}</Text> : null}
-              {c.email ? <Text style={styles.preparedSub}>{c.email}</Text> : null}
-              {c.phone ? <Text style={styles.preparedSub}>{c.phone}</Text> : null}
+          {showPrepared ? (
+            <View style={styles.twoCol}>
+              <View style={styles.col}>
+                <Text style={styles.eyebrow}>{preparedEyebrow}</Text>
+                {hasName ? (
+                  <>
+                    <Text style={styles.preparedName}>{c.name}</Text>
+                    {hasAddress ? (
+                      <Text style={styles.preparedSub}>{c.address}</Text>
+                    ) : null}
+                    {c.email ? (
+                      <Text style={styles.preparedSub}>{c.email}</Text>
+                    ) : null}
+                    {c.phone ? (
+                      <Text style={styles.preparedSub}>{c.phone}</Text>
+                    ) : null}
+                  </>
+                ) : (
+                  <Text style={styles.preparedName}>{c.address}</Text>
+                )}
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.eyebrow}>Project</Text>
+                <Text style={styles.preparedSub}>
+                  Initial contract: 8 weeks
+                </Text>
+                {installStr ? (
+                  <Text style={styles.preparedSub}>Install: {installStr}</Text>
+                ) : null}
+              </View>
             </View>
-            <View style={styles.col}>
-              <Text style={styles.eyebrow}>Project</Text>
-              <Text style={styles.preparedSub}>Initial contract: 8 weeks</Text>
-              {installStr ? (
-                <Text style={styles.preparedSub}>Install: {installStr}</Text>
-              ) : null}
-            </View>
-          </View>
+          ) : null}
 
           <Text style={styles.sectionHeader}>Line Items</Text>
 
@@ -333,27 +369,41 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
 
           {t.lines.length === 0 ? (
             <View style={styles.row}>
-              <Text style={[styles.rowDescText, { color: COLORS.muted }]}>
+              <Text style={[styles.rowDescPlain, { color: COLORS.muted }]}>
                 No items selected.
               </Text>
             </View>
           ) : (
-            t.lines.map((l, i) => (
-              <View key={i} style={styles.row}>
-                <View style={styles.rowDesc}>
-                  <Text style={styles.rowDescText}>
-                    {l.desc}
-                    {l.custom ? "  (custom)" : ""}
-                  </Text>
-                  {l.qty > 1 ? (
-                    <Text style={styles.rowDescQty}>
-                      {l.qty} × {fmt(l.unit)}
+            t.lines.map((l, i) => {
+              const isFirstPackageLine = i === 0 && state.mode === "full";
+              return (
+                <View key={i} style={styles.row}>
+                  <View style={styles.rowDesc}>
+                    <Text
+                      style={
+                        l.qty > 1 || l.custom
+                          ? styles.rowDescPlain
+                          : isFirstPackageLine
+                          ? styles.rowDescText
+                          : styles.rowDescPlain
+                      }
+                    >
+                      {l.desc}
+                      {l.custom ? "  (custom)" : ""}
                     </Text>
-                  ) : null}
+                    {isFirstPackageLine && subLine ? (
+                      <Text style={styles.rowDescQty}>{subLine}</Text>
+                    ) : null}
+                    {l.qty > 1 ? (
+                      <Text style={styles.rowDescQty}>
+                        {l.qty} × {fmt(l.unit)}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.rowAmt}>{fmt(l.amt)}</Text>
                 </View>
-                <Text style={styles.rowAmt}>{fmt(l.amt)}</Text>
-              </View>
-            ))
+              );
+            })
           )}
 
           <View style={styles.totalsBlock}>
@@ -411,22 +461,16 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
           {inc.length > 0 ? (
             <View style={styles.section}>
               <Text style={styles.eyebrow}>What&apos;s included</Text>
-              <View style={styles.includedGrid}>
-                {inc.map((item, i) => (
-                  <Text key={i} style={styles.includedItem}>
-                    •  {item}
-                  </Text>
-                ))}
-              </View>
+              <Text style={styles.includedInline}>{inc.join("  ·  ")}</Text>
             </View>
           ) : null}
 
-          <View style={styles.section}>
+          <View style={[styles.section, { marginTop: 18, paddingTop: 14 }]}>
             <Text style={styles.eyebrow}>Payment terms</Text>
             <Text style={styles.termsText}>{state.deposit.terms || ""}</Text>
           </View>
 
-          <View style={[styles.section, { marginTop: 16, paddingTop: 14 }]}>
+          <View style={[styles.section, { marginTop: 12, paddingTop: 10 }]}>
             <Text style={styles.eyebrow}>Extension policy</Text>
             <Text style={styles.termsText}>
               Initial contract is 8 weeks. After that, the first month
@@ -438,6 +482,9 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
 
         <View style={styles.footerBand} fixed>
           <Text style={styles.footerLeft}>Stager Depot</Text>
+          <Text style={styles.footerCenter}>
+            Questions? Visit stagerdepot.com
+          </Text>
           <Text style={styles.footerRight}>
             {state.quoteId || "Draft quote"}
           </Text>

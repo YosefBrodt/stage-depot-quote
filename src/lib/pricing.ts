@@ -1,6 +1,16 @@
 // Pricing constants + calculation functions ported 1:1 from legacy-index.html.
 // Do not change values here without sign-off; clients are quoted from this.
 
+// Returns YYYY-MM-DD in the local timezone, never in UTC.
+// new Date().toISOString() returns UTC, so at 10:56pm May 4 EDT, it ticks
+// forward to May 5; this helper stays anchored to the user's wall clock.
+export function localDateStr(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export type Mode = "full" | "single";
 export type Tier = "basic" | "signature" | "standard";
 
@@ -156,7 +166,7 @@ export const defaultState = (): QuoteState => ({
     address: "",
     email: "",
     phone: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: localDateStr(),
     installDate: "",
   },
   discount: { type: "none", value: 0, reason: "" },

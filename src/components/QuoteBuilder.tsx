@@ -540,10 +540,10 @@ export function QuoteBuilder() {
             <Image
               src="/sd-logo-filled.svg"
               alt="Stager Depot"
-              width={56}
-              height={35}
+              width={96}
+              height={60}
               priority
-              className="h-9 w-auto"
+              className="h-12 w-auto"
             />
             <div className="hidden sm:block h-7 w-px bg-cream/20" />
             <div className="hidden sm:block">

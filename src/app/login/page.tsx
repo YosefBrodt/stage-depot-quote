@@ -50,10 +50,10 @@ function LoginForm() {
           <Image
             src="/sd-logo-filled.svg"
             alt="Stager Depot"
-            width={120}
-            height={75}
+            width={160}
+            height={100}
             priority
-            className="h-12 w-auto mb-10"
+            className="h-16 w-auto mb-10"
           />
           <div className="text-[11px] uppercase tracking-eyebrow text-cream/60 font-semibold mb-4">
             Internal Tool
@@ -74,9 +74,9 @@ function LoginForm() {
             <Image
               src="/sd-logo-filled.svg"
               alt="Stager Depot"
-              width={48}
-              height={30}
-              className="h-9 w-auto"
+              width={80}
+              height={50}
+              className="h-11 w-auto"
             />
             <div className="h-7 w-px bg-line" />
             <div>
