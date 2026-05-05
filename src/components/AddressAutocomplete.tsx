@@ -68,6 +68,12 @@ function parseFeature(f: GeoapifyFeature, idx: number): Suggestion {
   };
 }
 
+// Bias autocomplete toward downtown Montreal so QC results surface first
+// while still allowing the rest of Canada (e.g. Toronto, Vancouver) to come
+// through if the user types something specific to those regions.
+const MONTREAL_LAT = 45.5019;
+const MONTREAL_LON = -73.5674;
+
 async function searchGeoapify(
   query: string,
   signal: AbortSignal
@@ -76,6 +82,10 @@ async function searchGeoapify(
   const url = new URL("https://api.geoapify.com/v1/geocode/autocomplete");
   url.searchParams.set("text", query);
   url.searchParams.set("filter", "countrycode:ca");
+  url.searchParams.set(
+    "bias",
+    `proximity:${MONTREAL_LON},${MONTREAL_LAT}`
+  );
   url.searchParams.set("limit", "5");
   url.searchParams.set("format", "geojson");
   url.searchParams.set("apiKey", GEOAPIFY_KEY);
