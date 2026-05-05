@@ -8,6 +8,7 @@ import {
 import {
   calcTotals,
   buildIncluded,
+  buildIncludedDetailed,
   PRICING,
   type QuoteState,
 } from "@/lib/pricing";
@@ -239,6 +240,24 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     lineHeight: 1.55,
   },
+  roomBlock: {
+    marginTop: 8,
+    paddingTop: 8,
+  },
+  roomBlockFirst: {
+    marginTop: 4,
+  },
+  roomLabel: {
+    fontSize: 10.5,
+    fontFamily: "Helvetica-Bold",
+    color: COLORS.olive,
+    marginBottom: 3,
+  },
+  roomItems: {
+    fontSize: 9.5,
+    color: "#57534e",
+    lineHeight: 1.5,
+  },
   termsText: {
     fontSize: 9.5,
     color: "#57534e",
@@ -301,6 +320,7 @@ function isDecodenMode(state: QuoteState): boolean {
 export function QuoteDocument({ state }: { state: QuoteState }) {
   const t = calcTotals(state);
   const inc = buildIncluded(state);
+  const incDetailed = buildIncludedDetailed(state);
   const c = state.client;
   const dateStr = formatLongDate(c.date);
   const installStr = formatLongDate(c.installDate);
@@ -485,7 +505,22 @@ export function QuoteDocument({ state }: { state: QuoteState }) {
             </View>
           ) : null}
 
-          {inc.length > 0 ? (
+          {incDetailed.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.eyebrow}>What&apos;s included</Text>
+              {incDetailed.map((room, i) => (
+                <View
+                  key={i}
+                  style={i === 0 ? styles.roomBlockFirst : styles.roomBlock}
+                >
+                  <Text style={styles.roomLabel}>{room.label}</Text>
+                  <Text style={styles.roomItems}>
+                    {room.contents.join(" · ")}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : inc.length > 0 ? (
             <View style={styles.section}>
               <Text style={styles.eyebrow}>What&apos;s included</Text>
               <Text style={styles.includedInline}>{inc.join("  ·  ")}</Text>

@@ -1302,14 +1302,24 @@ function FullModeBody(props: {
             {fmt(cfg.base)}
           </div>
         </div>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-5 pt-5 border-t border-cream/15">
-          {cfg.includes.map((item, i) => (
-            <li key={i} className="flex gap-2 text-sm text-cream/90">
-              <span className="text-cream">✓</span>
-              <span>{item}</span>
-            </li>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-5 pt-5 border-t border-cream/15">
+          {cfg.includedRooms.map((room, i) => (
+            <details key={i} className="group">
+              <summary className="flex gap-2 text-sm text-cream/95 cursor-pointer hover:text-cream items-start list-none">
+                <span className="text-cream mt-0.5 flex-shrink-0">✓</span>
+                <span className="flex-1 font-medium">{room.label}</span>
+                <span className="text-cream/50 text-xs flex-shrink-0 group-open:rotate-180 transition-transform">
+                  ▾
+                </span>
+              </summary>
+              <ul className="ml-5 mt-1.5 space-y-0.5 text-[12px] text-cream/70">
+                {room.contents.map((c, j) => (
+                  <li key={j}>· {c}</li>
+                ))}
+              </ul>
+            </details>
           ))}
-        </ul>
+        </div>
       </div>
       <div>
         <div className="flex items-baseline justify-between mb-3">
@@ -1326,7 +1336,7 @@ function FullModeBody(props: {
                 className={`room-card ${q > 0 ? "has" : ""}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="flex-1">
                     <div className="font-semibold text-sm">{a.label}</div>
                     <div className="text-xs text-muted mt-0.5">
                       {fmt(a.price)} {a.multi ? "each" : ""}
@@ -1352,6 +1362,21 @@ function FullModeBody(props: {
                     </button>
                   </div>
                 </div>
+                {a.contents && a.contents.length > 0 ? (
+                  <details className="mt-3 group">
+                    <summary className="text-[11px] uppercase tracking-eyebrow text-muted font-semibold cursor-pointer">
+                      What&apos;s included
+                    </summary>
+                    <ul className="mt-2 space-y-1 text-xs text-ink/85">
+                      {a.contents.map((c, j) => (
+                        <li key={j} className="flex gap-2 items-start">
+                          <span className="check-dot text-xs leading-5">✓</span>
+                          <span className="leading-5">{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
               </div>
             );
           })}
@@ -1383,7 +1408,7 @@ function SingleModeBody(props: {
           return (
             <div key={r.id} className={`room-card ${q > 0 ? "has" : ""}`}>
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="flex-1">
                   <div className="font-semibold text-sm">{r.label}</div>
                   <div className="text-xs text-muted mt-0.5">
                     {fmt(r.price)} each, delivery included
@@ -1409,6 +1434,21 @@ function SingleModeBody(props: {
                   </button>
                 </div>
               </div>
+              {r.contents && r.contents.length > 0 ? (
+                <details className="mt-3 group">
+                  <summary className="text-[11px] uppercase tracking-eyebrow text-muted font-semibold cursor-pointer">
+                    What&apos;s included
+                  </summary>
+                  <ul className="mt-2 space-y-1 text-xs text-ink/85">
+                    {r.contents.map((c, j) => (
+                      <li key={j} className="flex gap-2 items-start">
+                        <span className="check-dot text-xs leading-5">✓</span>
+                        <span className="leading-5">{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </div>
           );
         })}

@@ -20,6 +20,7 @@ export type Addon = {
   price: number;
   multi?: boolean;
   max?: number;
+  contents?: string[];
 };
 
 export type Room = {
@@ -27,6 +28,12 @@ export type Room = {
   label: string;
   price: number;
   max?: number;
+  contents?: string[];
+};
+
+export type IncludedRoom = {
+  label: string;
+  contents: string[];
 };
 
 export type FullTier = {
@@ -34,6 +41,7 @@ export type FullTier = {
   base: number;
   sublabel: string;
   includes: string[];
+  includedRooms: IncludedRoom[];
   addons: Addon[];
 };
 
@@ -74,14 +82,178 @@ export const PRICING: {
         "Master Bedroom",
         "2 Bathrooms (powder + master)",
       ],
+      includedRooms: [
+        {
+          label: "Dining Room",
+          contents: [
+            "6-seater dining table",
+            "6 dining chairs",
+            "Painting or mirror",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Living Room",
+          contents: [
+            "2 or 3 seater sofa",
+            "1 or 2 accent chairs",
+            "Coffee table",
+            "End table",
+            "Floor lamp or floor plant",
+            "Media table",
+            "6x9 rug",
+            "50\" TV",
+            "Mirror or painting",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Kitchen",
+          contents: [
+            "4-seater dining table",
+            "4 island stools",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Entrance & Hallway",
+          contents: [
+            "Console table or bench",
+            "Mirror or painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Master Bedroom",
+          contents: [
+            "Queen bed + mattress + linen",
+            "2 nightstands",
+            "Bench",
+            "6x9 rug",
+            "2 table lamps",
+            "Floor plant",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Powder + Master Bathroom",
+          contents: [
+            "Bath towels",
+            "Hand towels",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+      ],
       addons: [
-        { id: "bedroom", label: "Additional bedroom", price: 899, multi: true, max: 6 },
-        { id: "livingroom", label: "Additional living room", price: 1099, multi: true, max: 3 },
-        { id: "office", label: "Office", price: 599, multi: true, max: 3 },
-        { id: "gym", label: "Gym", price: 999, multi: false },
-        { id: "bathroom", label: "Additional bathroom", price: 199, multi: true, max: 6 },
-        { id: "kitchen-upgrade", label: "Upgraded kitchen", price: 299, multi: false },
-        { id: "playroom", label: "Basement playroom", price: 1099, multi: false },
+        {
+          id: "bedroom",
+          label: "Additional bedroom",
+          price: 899,
+          multi: true,
+          max: 6,
+          contents: [
+            "Queen bed + mattress + linen",
+            "2 nightstands",
+            "2 table lamps",
+            "6x9 rug",
+            "Bench",
+            "Floor plant",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          id: "livingroom",
+          label: "Additional living room",
+          price: 1099,
+          multi: true,
+          max: 3,
+          contents: [
+            "Sofa or sectional",
+            "Accent chair(s)",
+            "Coffee table",
+            "End tables",
+            "Media table",
+            "Floor lamp",
+            "Floor plant",
+            "Rug",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          id: "office",
+          label: "Office",
+          price: 599,
+          multi: true,
+          max: 3,
+          contents: [
+            "Desk",
+            "Office chair",
+            "1 or 2 accent chairs",
+            "End table",
+            "Rug 6x9 or smaller",
+            "Floor plant or floor lamp",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          id: "gym",
+          label: "Gym",
+          price: 999,
+          multi: false,
+          contents: [
+            "Gym mat or rug",
+            "Decor + mirror styling",
+            "Plant + accents",
+            "(Equipment by client)",
+          ],
+        },
+        {
+          id: "bathroom",
+          label: "Additional bathroom",
+          price: 199,
+          multi: true,
+          max: 6,
+          contents: [
+            "Bath towels",
+            "Hand towels",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          id: "kitchen-upgrade",
+          label: "Upgraded kitchen",
+          price: 299,
+          multi: false,
+          contents: [
+            "Premium counter accessories",
+            "Tablescape upgrade (vases, stems, bowl)",
+            "Display-grade cookware styling",
+          ],
+        },
+        {
+          id: "playroom",
+          label: "Basement playroom",
+          price: 1099,
+          multi: false,
+          contents: [
+            "Loveseat or accent seating",
+            "Coffee or activity table",
+            "Media table",
+            "Rug",
+            "Floor lamp",
+            "Wall art + decor",
+            "Plant",
+          ],
+        },
       ],
     },
     signature: {
@@ -96,13 +268,187 @@ export const PRICING: {
         "Master Bedroom",
         "2 Bathrooms (powder + master)",
       ],
+      includedRooms: [
+        {
+          label: "Dining Room",
+          contents: [
+            "8 to 12 seater dining table",
+            "8 to 12 dining chairs",
+            "Buffet",
+            "Mirror",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Living Room",
+          contents: [
+            "3-seater sofa",
+            "2 accent chairs",
+            "Coffee table",
+            "2 end tables",
+            "Media table",
+            "Floor lamp",
+            "Floor plant",
+            "7x11 rug",
+            "Mirror + painting",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Kitchen",
+          contents: [
+            "4 to 6 seater dining table",
+            "4 to 6 dining chairs",
+            "8 to 10 island stools",
+            "Mirror",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Entrance & Hallway",
+          contents: [
+            "Console or round table",
+            "2 ottomans or bench",
+            "End table",
+            "Mirror",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Master Bedroom",
+          contents: [
+            "King bed + mattress + premium linen",
+            "2 nightstands",
+            "2 table lamps",
+            "7x11+ rug",
+            "Painting",
+            "Mirror",
+            "Floor plant",
+            "Accent chair or loveseat",
+            "End table",
+            "Small decor",
+          ],
+        },
+        {
+          label: "Powder + Master Bathroom",
+          contents: [
+            "Bath towels",
+            "Hand towels",
+            "Makeup station",
+            "Ottoman or chair",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+      ],
       addons: [
-        { id: "bedroom", label: "Additional bedroom", price: 1129, multi: true, max: 6 },
-        { id: "livingroom", label: "Additional living room", price: 1379, multi: true, max: 3 },
-        { id: "office", label: "Office", price: 749, multi: true, max: 3 },
-        { id: "gym", label: "Gym", price: 1249, multi: false },
-        { id: "bathroom", label: "Additional bathroom", price: 249, multi: true, max: 6 },
-        { id: "playroom", label: "Basement playroom", price: 1379, multi: false },
+        {
+          id: "bedroom",
+          label: "Additional bedroom",
+          price: 1129,
+          multi: true,
+          max: 6,
+          contents: [
+            "Queen bed + mattress + linen",
+            "2 nightstands",
+            "2 table lamps",
+            "6x9 rug",
+            "Bench",
+            "Dresser or chest",
+            "Mirror",
+            "Floor plant",
+            "Painting",
+            "Small decor",
+          ],
+        },
+        {
+          id: "livingroom",
+          label: "Additional living room",
+          price: 1379,
+          multi: true,
+          max: 3,
+          contents: [
+            "5 to 7 piece sectional",
+            "1 or 2 accent chairs",
+            "Coffee table",
+            "2 end tables",
+            "Media table",
+            '50"+ TV',
+            "Floor plant",
+            "Painting",
+            "7x11 rug",
+          ],
+        },
+        {
+          id: "office",
+          label: "Office",
+          price: 749,
+          multi: true,
+          max: 3,
+          contents: [
+            "Desk",
+            "Office chair",
+            "1 or 2 accent chairs",
+            "End table",
+            "Loveseat (optional)",
+            "Console or sideboard",
+            "Floor lamp",
+            "Mirror + painting",
+            "Plant",
+            "Rug",
+            "Small decor",
+          ],
+        },
+        {
+          id: "gym",
+          label: "Gym",
+          price: 1249,
+          multi: false,
+          contents: [
+            "Premium gym mat or rug",
+            "Statement mirror",
+            "Plant + decor styling",
+            "(Equipment by client)",
+          ],
+        },
+        {
+          id: "bathroom",
+          label: "Additional bathroom",
+          price: 249,
+          multi: true,
+          max: 6,
+          contents: [
+            "Bath towels",
+            "Hand towels",
+            "Makeup station",
+            "Ottoman or chair",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          id: "playroom",
+          label: "Basement playroom",
+          price: 1379,
+          multi: false,
+          contents: [
+            "Sectional or loveseat",
+            "Activity / coffee table",
+            "Media table + TV",
+            "Rug",
+            "Floor lamp",
+            "Wall art + decor",
+            "Plant",
+          ],
+        },
       ],
     },
   },
@@ -111,20 +457,136 @@ export const PRICING: {
       label: "Standard rooms",
       sublabel: "Individual room staging, delivery included",
       rooms: [
-        { id: "bedroom", label: "Bedroom", price: 1299, max: 6 },
-        { id: "livingroom", label: "Living Room", price: 1599, max: 3 },
-        { id: "diningroom", label: "Dining Room", price: 1599, max: 2 },
-        { id: "kitchen", label: "Kitchen", price: 1299, max: 2 },
+        {
+          id: "bedroom",
+          label: "Bedroom",
+          price: 1299,
+          max: 6,
+          contents: [
+            "Queen bed + mattress + linen",
+            "2 nightstands",
+            "2 table lamps",
+            "6x9 rug",
+            "Bench",
+            "Floor plant",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
+        {
+          id: "livingroom",
+          label: "Living Room",
+          price: 1599,
+          max: 3,
+          contents: [
+            "2 or 3 seater sofa",
+            "1 or 2 accent chairs",
+            "Coffee table",
+            "End table",
+            "Floor lamp or floor plant",
+            "Media table",
+            "6x9 rug",
+            "50\" TV",
+            "Mirror or painting",
+            "Small decor",
+          ],
+        },
+        {
+          id: "diningroom",
+          label: "Dining Room",
+          price: 1599,
+          max: 2,
+          contents: [
+            "6-seater dining table",
+            "6 dining chairs",
+            "Painting or mirror",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          id: "kitchen",
+          label: "Kitchen",
+          price: 1299,
+          max: 2,
+          contents: [
+            "4-seater dining table",
+            "4 island stools",
+            "Painting or mirror",
+            "Small decor",
+          ],
+        },
       ],
     },
     signature: {
       label: "Signature rooms",
       sublabel: "For larger homes, includes 25% premium",
       rooms: [
-        { id: "bedroom", label: "Bedroom", price: 1629, max: 6 },
-        { id: "livingroom", label: "Living Room", price: 1999, max: 3 },
-        { id: "diningroom", label: "Dining Room", price: 1629, max: 2 },
-        { id: "kitchen", label: "Kitchen", price: 1629, max: 2 },
+        {
+          id: "bedroom",
+          label: "Bedroom",
+          price: 1629,
+          max: 6,
+          contents: [
+            "Queen bed + mattress + premium linen",
+            "2 nightstands",
+            "2 table lamps",
+            "6x9 rug",
+            "Bench",
+            "Dresser or chest",
+            "Mirror",
+            "Floor plant",
+            "Painting",
+            "Small decor",
+          ],
+        },
+        {
+          id: "livingroom",
+          label: "Living Room",
+          price: 1999,
+          max: 3,
+          contents: [
+            "5 to 7 piece sectional",
+            "1 or 2 accent chairs",
+            "Coffee table",
+            "2 end tables",
+            "Media table",
+            '50"+ TV',
+            "Floor plant",
+            "Painting",
+            "7x11 rug",
+          ],
+        },
+        {
+          id: "diningroom",
+          label: "Dining Room",
+          price: 1629,
+          max: 2,
+          contents: [
+            "8 to 12 seater dining table",
+            "8 to 12 dining chairs",
+            "Buffet",
+            "Mirror",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
+        {
+          id: "kitchen",
+          label: "Kitchen",
+          price: 1629,
+          max: 2,
+          contents: [
+            "4 to 6 seater dining table",
+            "4 to 6 dining chairs",
+            "8 to 10 island stools",
+            "Mirror",
+            "Painting",
+            "Floor plant",
+            "Small decor",
+          ],
+        },
       ],
     },
   },
@@ -139,16 +601,19 @@ export const PRICING: {
           label: "Studio",
           price: 399,
           contents: [
-            "Queen platform bed + mattress + linen set",
+            "Queen/King bed + mattress",
             "Nightstand + table lamp",
+            "Full set of linen",
             "2-seater sofa or loveseat",
+            "Accent chair",
             "Coffee table",
-            "Floor lamp",
+            "End table",
+            "Floor lamp or 2 table lamps",
             "Rug",
             "Dining table + 2 chairs",
-            "Basic kitchenware",
-            "Branded coffee machine",
-            "Bath towels + hand towels",
+            "Basic kitchenware (pans, dishes, cutlery)",
+            "Branded coffee machine + mugs",
+            "Hand + bath towels",
             "1 bathrobe",
           ],
         },
@@ -157,15 +622,19 @@ export const PRICING: {
           label: "1 Bedroom",
           price: 499,
           contents: [
-            "Queen or King bed + mattress + linen set",
-            "2 nightstands + 2 table lamps",
-            "2-seater sofa, accent chair",
-            "Coffee table + 2 end tables",
-            "Floor lamp + table lamps",
+            "Queen/King bed + mattress",
+            "2 nightstands",
+            "2 table lamps",
+            "2 full sets of linen",
+            "2-seater sofa",
+            "Accent chair",
+            "Coffee table",
+            "2 end tables",
+            "Floor lamp or 2 table lamps",
             "Rug",
             "Dining table + 4 chairs",
-            "Basic kitchenware",
-            "Branded coffee machine",
+            "Basic kitchenware (pans, dishes, cutlery)",
+            "Branded coffee machine + mugs",
             "Hand + bath towels",
             "2 bathrobes",
           ],
@@ -175,16 +644,18 @@ export const PRICING: {
           label: "2 Bedroom",
           price: 699,
           contents: [
-            "2 Queen beds + mattresses + linen sets",
-            "4 nightstands + 4 table lamps",
-            "3-seater sofa, accent chair",
-            "Coffee table + 2 end tables",
-            "Media table",
-            "Floor lamp + table lamps",
-            "Rugs (living + bedrooms)",
-            "Dining table + 4 to 6 chairs",
-            "Basic kitchenware",
-            "Branded coffee machine",
+            "2 Queen/King beds + mattresses",
+            "Nightstands + table lamps for each room",
+            "Full sets of linen for each bed",
+            "2-seater sofa",
+            "Accent chair",
+            "Coffee table",
+            "2 end tables",
+            "Floor lamp or 2 table lamps",
+            "Rug",
+            "Dining table + 4 chairs",
+            "Basic kitchenware (pans, dishes, cutlery)",
+            "Branded coffee machine + mugs",
             "Hand + bath towels",
             "2 bathrobes",
           ],
@@ -194,18 +665,20 @@ export const PRICING: {
           label: "3 Bedroom",
           price: 899,
           contents: [
-            "3 beds (mix of Queen + King) + mattresses + linen sets",
-            "6 nightstands + 6 table lamps",
-            "3-seater sofa, 2 accent chairs",
-            "Coffee table + 2 end tables",
-            "Media table",
-            "Floor lamp + table lamps",
-            "Rugs (living + bedrooms)",
+            "3 Queen/King beds + mattresses",
+            "Nightstands + table lamps for each room",
+            "Full sets of linen for each bed",
+            "3-seater sofa",
+            "Accent chair",
+            "Coffee table",
+            "2 end tables",
+            "Floor lamp or 2 table lamps",
+            "Rug",
             "Dining table + 6 chairs",
-            "Basic kitchenware",
-            "Branded coffee machine",
+            "Basic kitchenware (pans, dishes, cutlery)",
+            "Branded coffee machine + mugs",
             "Hand + bath towels",
-            "Bathrobes",
+            "2 bathrobes",
           ],
         },
       ],
@@ -370,6 +843,68 @@ export function buildIncluded(state: QuoteState): string[] {
 
 export function isDecoden(state: QuoteState): boolean {
   return state.mode === "decoden";
+}
+
+export type IncludedDetail = {
+  label: string;
+  qty?: number;
+  contents: string[];
+};
+
+// Same idea as buildIncluded() but returns structured per-room detail with the
+// piece-level contents, used by the PDF's "What's included" section so the
+// client sees what they're actually getting in each room.
+export function buildIncludedDetailed(state: QuoteState): IncludedDetail[] {
+  const out: IncludedDetail[] = [];
+
+  if (state.mode === "full") {
+    const tier = state.tier === "signature" ? "signature" : "basic";
+    const cfg = PRICING.full[tier];
+    cfg.includedRooms.forEach((r) => {
+      out.push({ label: r.label, contents: r.contents });
+    });
+    cfg.addons.forEach((a) => {
+      const q = state.qty[qtyKey("full", tier, a.id)] || 0;
+      if (q > 0 && a.contents) {
+        out.push({
+          label: q > 1 ? `${a.label} × ${q}` : a.label,
+          qty: q,
+          contents: a.contents,
+        });
+      }
+    });
+    return out;
+  }
+
+  if (state.mode === "single") {
+    const tier = state.tier === "signature" ? "signature" : "standard";
+    const cfg = PRICING.single[tier];
+    cfg.rooms.forEach((r) => {
+      const q = state.qty[qtyKey("single", tier, r.id)] || 0;
+      if (q > 0 && r.contents) {
+        out.push({
+          label: q > 1 ? `${r.label} × ${q}` : r.label,
+          qty: q,
+          contents: r.contents,
+        });
+      }
+    });
+    return out;
+  }
+
+  // decoden
+  const cfg = PRICING.decoden.monthly;
+  cfg.units.forEach((u) => {
+    const q = state.qty[qtyKey("decoden", "monthly", u.id)] || 0;
+    if (q > 0) {
+      out.push({
+        label: q > 1 ? `${u.label} × ${q}` : u.label,
+        qty: q,
+        contents: u.contents,
+      });
+    }
+  });
+  return out;
 }
 
 export function calcTotals(state: QuoteState): Totals {
